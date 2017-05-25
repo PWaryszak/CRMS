@@ -17,6 +17,38 @@ setwd("~/Desktop/CRMS/CRMS")
 
 #LOAD DATA:
 veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
-str(veg)#295644 obs. of  32 variables:
-levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"  "Swamp"
-levels(veg$SpecCode)
+str(veg)#295644 obs. of  28 variables:
+names(veg)
+[1] "StationID"  #Site.plot                        
+[2] "StationFront" #Site = name before hypen
+#for example for StationID "CRMS0002-V54" it is "CRMS0002"
+[3] "StationBack"   # plot  =#Site = name after hypen
+#for example for StationID "CRMS0002-V54" it is "V54"                    
+[4] "CollectionDate"   #full date                  
+[5] "month"                              
+[6] "day"                                
+[7] "year"                               
+[8] "Community"     # 5 types :
+#"Brackish","Freshwater","Intermediate","Saline", "Swamp"  
+[9] "CoverTotal" # Cover per plot sometimes is higher than 100%. 
+#Bare ground is 0 when Cover = 100%                      
+[10] "Cover"        # cover of single plant                      
+[11] "FieldName"                          
+[12] "Genus"                              
+[13] "Species"                            
+[14] "SpecCode"    #8 letters = 4 genus + 4 species 
+#to be used in Vegan ordinations
+[15] "CoverTree"                          
+[16] "CoverShrub"                         
+[17] "CoverHerb"                          
+[18] "CoverCarpet"                        
+[19] "AvHeightDominant.cm"                
+[20] "AvHeightTree.cm"                    
+[21] "AvHeightShrub.cm"                   
+[22] "AvHeightHerb.cm"                    
+[23] "Av.HeightCarpet.cm"                 
+[24] "Common_Name_As_Currently_Recognized"
+[25] "BraunBlanquetRank"                  
+[26] "In.Out"                             
+[27] "Comments"                           
+[28] "SpecCodeFull_Explanation"   
