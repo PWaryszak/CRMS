@@ -22,7 +22,7 @@ names(veg)
 [1] "StationID"  #Site.plot                        
 [2] "StationFront" #Site = name before hypen
 #for example for StationID "CRMS0002-V54" it is "CRMS0002"
-[3] "StationBack"   # plot  =#Site = name after hypen
+[3] "StationBack"   # plot = name after hypen
 #for example for StationID "CRMS0002-V54" it is "V54"                    
 [4] "CollectionDate"   #full date                  
 [5] "month"                              
@@ -31,7 +31,6 @@ names(veg)
 [8] "Community"     # 5 types :
 #"Brackish","Freshwater","Intermediate","Saline", "Swamp"  
 [9] "CoverTotal" # Cover per plot sometimes is higher than 100%. 
-#Bare ground is 0 when Cover = 100%                      
 [10] "Cover"        # cover of single plant                      
 [11] "FieldName"                          
 [12] "Genus"                              
