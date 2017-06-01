@@ -15,7 +15,7 @@ setwd("~/Desktop/CRMS/CRMS")
 #for ordination in vegan package. Vegan does not like long/uneven names.
 
 
-#LOAD DATA:
+#LOAD DATA:=============
 veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
 str(veg)#295644 obs. of  28 variables:
 names(veg)
@@ -51,3 +51,17 @@ names(veg)
 [26] "In.Out"                             
 [27] "Comments"                           
 [28] "SpecCodeFull_Explanation"   
+
+#Data further cleanig & Reduction========
+#I decided to delete Aaaaprobl
+#as they code for bare ground or nothing related to plants species,these were the plots that were hard to access and not surveyed:
+  
+#The species were coded with error so I fixed them as:
+#Bolb(Asc to Bolbxxxx,   Dich(Hit to Dichxxxx,  Phan(Raf to Phanxxxx
+#Scho(Rch to Schoxxxx,    CeraL to Ceraxxxx,     CeraBron to Ceraxxxx
+#CentL to Centxxxx, CephL to Cephxxxx,    ZizaDöll to Zizaxxxx
+#IvaL to Ivaxxxxx and so on to make all names 8 long in characters (to make work smoothly in Vegan).
+
+# I also removed the field name column and the comments. 
+#2 colums with species common names and additional explanation removed.
+#File size went down to ~30MB.
