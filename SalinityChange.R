@@ -101,5 +101,5 @@ f<-ggplot(See.SoilSalinity.ppt, aes(x=Community, y=SoilSalinity.ppt, fill = Comm
 f1<-f + geom_bar(position=pd, stat="identity")+ geom_errorbar(aes(ymin=SoilSalinity.ppt-se, ymax=SoilSalinity.ppt+se),width=.4, position=pd)
 f1
 f2<- f1 +xlab("Community Type") + ylab("Soil Salinity (ppt)") + theme_classic()+theme_pw3 
-Salinity <- f2 + ggtitle("Soil Salinity in Five Community Types (2008)")
+Salinity <- f2 + ggtitle("Soil Salinity in Four Community Types (2008)")
 Salinity
