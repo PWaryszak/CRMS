@@ -1,7 +1,6 @@
 #REDUNDANCY ANALYSIS (RDA) with forward variable select for Christina
 # Load packages
 library(vegan)
-require(grid)
 library(tidyverse)
 
 #Salinity change in subsample==========
@@ -68,5 +67,5 @@ range(rowSums(vegData2008))# 1 20 = richness range
 sum(vegData2008[is.na(vegData2008)])#ZERO NAs!! YAY!!!
 
 #Create environmental data (soil data)
-envData2008<- vegData2008[ , c("year", "MeanSalinity", "Community","CVSalinity","MeanOrganicMatter","MeanWetpH ")]
+envData2008<- vegEnv08wide[ , c("year", "MeanSalinity", "Community","CVSalinity","MeanOrganicMatter","MeanWetpH ")]
 
