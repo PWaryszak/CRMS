@@ -61,11 +61,25 @@ vegEnv08wide<-spread(vegEnv08,key = SpecCode, value = Cover, fill = 0)#species i
 str(vegEnv08wide)#1478 obs. of  260 variables:
 
 #Matrices for RDA (Christina)==================
+# Remove Swamp as we know it contains no Phrag:
+vegEnv08wideNoSwamp<-vegEnv08wide[vegEnv08wide$Community !="Swamp",]
+str(vegEnv08wideNoSwamp)#1081 obs. of  260
+
+#Create veg-only matrix for year 2008, No Swamp:
+vegData2008NoSwamp <- vegEnv08wideNoSwamp[,12:260]
+range(rowSums(vegData2008NoSwamp))# 1 20 = richness range
+sum(vegData2008[is.na(vegData2008NoSwamp)])#ZERO NAs!! YAY!!!
+write.csv(vegData2008NoSwamp, file = "Veg2008NoSwamp.csv", row.names = FALSE)#Sent to CB to do RDA.
+
+#Create environmental data (soil data)
+envData2008NoSwamp<- vegEnv08wideNoSwamp[ , c("year", "MeanSalinity", "Community","CVSalinity","MeanOrganicMatter","MeanWetpH")]
+write.csv(envData2008NoSwamp, file = "Env2008NoSwamp.csv", row.names = FALSE)#Sent to CB to do RDA.
+
+#With Swamp:
 #Create veg-only matrix for year 2008:
 vegData2008 <- vegEnv08wide[,12:260]
 range(rowSums(vegData2008))# 1 20 = richness range
 sum(vegData2008[is.na(vegData2008)])#ZERO NAs!! YAY!!!
-
 #Create environmental data (soil data)
-envData2008<- vegEnv08wide[ , c("year", "MeanSalinity", "Community","CVSalinity","MeanOrganicMatter","MeanWetpH ")]
+envData2008<- vegEnv08wide[ , c("year", "MeanSalinity", "Community","CVSalinity","MeanOrganicMatter","MeanWetpH")]
 
