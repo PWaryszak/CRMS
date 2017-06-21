@@ -52,7 +52,7 @@ names(veg)
 [27] "Comments"                           
 [28] "SpecCodeFull_Explanation"   
 
-#Data further cleanig & Reduction========
+#2. Further Datacleanig & Reduction========
 #I decided to delete Aaaaprobl
 #as they code for bare ground or nothing related to plants species,these were the plots that were hard to access and not surveyed:
   
@@ -63,5 +63,45 @@ names(veg)
 #IvaL to Ivaxxxxx and so on to make all names 8 long in characters (to make work smoothly in Vegan).
 
 # I also removed the field name column and the comments. 
-#2 colums with species common names and additional explanation removed.
+#Colums with species common names and additional explanation & comment columns removed. Currently 24 columns
 #File size went down to ~30MB.
+veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
+str(veg)#293726 obs. of  24 variables:
+names(veg) #Current Variable:
+[1] "StationID"          
+[2] "StationFront"       
+[3] "StationBack"        
+[4] "CollectionDate"     
+[5] "month"              
+[6] "day"                
+[7] "year"               
+[8] "Community"          
+[9] "CoverTotal"         
+[10] "Cover"              
+[11] "SpecCode"           
+[12] "Genus"              
+[13] "Species"            
+[14] "CoverTree"          
+[15] "CoverShrub"         
+[16] "CoverHerb"          
+[17] "CoverCarpet"        
+[18] "AvHeightDominant.cm"
+[19] "AvHeightTree.cm"    
+[20] "AvHeightShrub.cm"   
+[21] "AvHeightHerb.cm"    
+[22] "Av.HeightCarpet.cm" 
+[23] "BraunBlanquetRank"  
+[24] "In.Out"
+
+#3. Further Data Cleaning============
+#Load DATA:
+veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
+#We agreed to remove Swamp records (Community = "Swamp") as they had no records of our target species= Phraaust
+#We also agreed on removing all records from outside the plot where In.Out = "Out"
+veg2<-veg[veg$Community != "Swamp",] #removing Swamo records
+dim(veg2)#236382     24
+veg3<-veg2[veg2$In.Out != "Out",]
+dim(veg3)#151489     24
+
+#Save it and commit to Github today [21June2017]
+write.csv(veg3, file = "MarshData.csv", row.names = FALSE)
