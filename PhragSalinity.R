@@ -10,13 +10,16 @@ veg$Community<-factor(veg$Community, levels = c( "Swamp","Freshwater","Intermedi
 #Where is Phragmites? Phrag Cover Plot============
 Phragmites<-filter(veg, SpecCode == "Phraaust") #subsetting only data we are most interested in code 1&2 = tavy
 str(Phragmites)#3031 obs. of  28 variables
+View(Phragmites)
 PhragPresence<-as.data.frame(table(Phragmites$StationFront))
-head(PhragStations)
-PhragStations<-PhragPresence[PhragPresence$Freq > 0 , ]
+PhragStations<-PhragPresence[PhragPresence$Freq > 0 , ]#selecting Station with more than 0 cover of Phrag
+length(levels(droplevels(PhragStations$StationFront)))#89 Stations recorded Phrag in their plots,
 colnames(PhragStations)[1] <- "StationFront"
 Abundant <- PhragStations[order(- PhragStations$Freq),] #sorting in descending mannert to have a look 
 #what station are most abundant in Phragmites
 Abundant
+head(PhragStations)
+levels(droplevels(Phragmites$StationFront))
 
 #Let us subset the PhragStations from env data:
 env<-read.csv("CRMS_Soil.csv")
@@ -37,7 +40,7 @@ PlotsMeasured2<-filter(PlotsMeasured, year==2006|year==2007|year==2008| year==20
 PlotsMeasured2
 PlotsMeasured3<-spread(PlotsMeasured2, key = year, value = number,fill=0)
 M<-PlotsMeasured3[ , 2:5]
-M[M>0] <-1 #Change values to 0 1 
+M[M>0] <- 1 #Change values to 0 1 
 M$suming<-rowSums(M)
 range(M$suming)#1 1 #if none of the rows is bigger than one it means 
 #none of the years overlap in measuring salinity
