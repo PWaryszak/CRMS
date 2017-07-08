@@ -1,7 +1,53 @@
-#REDUNDANCY ANALYSIS (RDA) with forward variable select for Christina
+#REDUNDANCY ANALYSIS (RDA) forward variable select for Christina
 # Load packages
 library(vegan)
 library(tidyverse)
+
+#Create veg matrices for each year:
+
+#Let us subset the plots (stationID) present in year 2007 from all data.
+#We also remove all records from Swamp station as they contain no records our target species Phragmites:
+
+veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
+samples2007<-veg[veg$year ==2007,] 
+length(levels(droplevels(samples2007$StationID)))#587 = number of good plots in 2007 
+
+#Subset only these 2007 station from entire data set to have a
+#consistent set of plot across years:
+
+ourDF<- veg[ which (veg$StationID  %in%  samples2007$StationID), c("year", "StationID", "StationFront","StationBack", "SpecCode", "Cover", "Community", "CoverTotal")]
+str(ourDF)#10525 obs. of  8 variables:
+table(ourDF$year)# a quite balanced sampling!!!!
+
+#Reshape to wide format to compute plant composition indices:
+DF2007to2016$Cover <- ifelse(DF2007to2016$Cover ==0,0,1) #turning cover to presence/absence data
+v<-DF2007to2016[,c("StationID","StationFront","Community","SpecCode","Cover","CoverTotal","year")] #select most important variables
+
+v.wide<-spread(v,key = SpecCode, value = Cover, fill = 0)#species indices can be computed in a wide format only= each species has its own column.
+#write.csv(v.wide, file = "VegConsistentPlotsData.csv", row.names = FALSE)
+
+#The plots measured in 2007 were not always consistently surveyed across 10 years
+#We need to find them and remove them. Pivot in excel works better here for some reason
+#write.csv(v.wide, file = "VegConsistentPlotsData.csv", row.names = FALSE)
+
+Richness <-specnumber(v.wide[ , 6:218])
+range(Richness)#1 24 = our richness range per plot
+
+#To subset each year we may need a loop to avoif repeating this code 10 times for each year
+veg.matrix2007<-v.wide[v.wide$year=="2007",6:218]#let us subset a species matrix only.
+Richness2007 <-specnumber(veg.matrix2007)
+range(Richness2007)#1 24 that is our range of species per plot in 2007
+
+#The loop below produces cvs file of veg matrix for each year separetly:
+
+for ( i in unique(v.wide$year) ){
+  
+  VegMatrix <- subset(v.wide, year== i)#create a subset data for each plot2 level
+  
+  write.csv(VegMatrix, file = paste0("VegMatrix_Year", i, ".csv"), row.names = FALSE)
+  
+}
+
 
 #Salinity change in subsample==========
 env<-read.csv("CRMS_Soil.csv")
@@ -33,6 +79,8 @@ S08# A tibble: 152 × 6
 S08$year <- as.factor("2008")
 S08
 
+
+#Matrices for 2008 RDA (Christina)==================
 #GET VEG in 2008 
 veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
 str(veg)#293726 obs. of  24 variables:
@@ -60,7 +108,6 @@ str(vegEnv08)#YAY! 6644 obs.as before joining.
 vegEnv08wide<-spread(vegEnv08,key = SpecCode, value = Cover, fill = 0)#species indices can be computed only when species are 
 str(vegEnv08wide)#1478 obs. of  260 variables:
 
-#Matrices for RDA (Christina)==================
 # Remove Swamp as we know it contains no Phrag:
 vegEnv08wideNoSwamp<-vegEnv08wide[vegEnv08wide$Community !="Swamp",]
 str(vegEnv08wideNoSwamp)#1081 obs. of  260
@@ -76,7 +123,7 @@ envData2008NoSwamp<- vegEnv08wideNoSwamp[ , c("year", "MeanSalinity", "Community
 write.csv(envData2008NoSwamp, file = "Env2008NoSwamp.csv", row.names = FALSE)#Sent to CB to do RDA.
 
 #With Swamp:
-#Create veg-only matrix for year 2008:
+#Create veg-only matrix for all year 2008
 vegData2008 <- vegEnv08wide[,12:260]
 range(rowSums(vegData2008))# 1 20 = richness range
 sum(vegData2008[is.na(vegData2008)])#ZERO NAs!! YAY!!!
