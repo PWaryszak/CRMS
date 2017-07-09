@@ -3,93 +3,132 @@
 library(tidyverse)
 
 env<-read.csv("CRMS_Soil.csv")
-str(env)#7384 obs. of  19 variables: // $ StationID: Factor w/ 388 levels
-table(env$year)#sampling effort across years
-#2006 2007 2008 2009 2011 2012 2014 2015 
-#1869 1764 2546  374    3   18  807    3 
-#Measurements were very haphazard. I am able to look at the change between 2008 & 2014:
+str(env)#194840 obs. of  12 variables: 
+#This is a new env data with more balanced soil salinity Measurements
+#DESCRIPTION of variables we most interested:
+#env$StationID   =  Factor w/ 5213 levels (n of plots)
+#env$StationFront = Factor w/ 400 levels ( n of sites)
+#env$year = 2
+table(env$year)#good sampling effort across years. Cut out year 2001 & 2006 to
+#fit veg data.
+range(env$SoilPorewaterSalinity.ppt)#0 3067
 
-#Matching Salinity data with Communities  ============
-#Salinity was measured in Stations not in each plots seperatly:
-Salinity<-summarise(group_by(env,StationFront,year), MeanSalinity=mean(SoilSalinity.ppt),
-                            SDSalinity=sd(SoilSalinity.ppt),CVSalinity= SDSalinity/MeanSalinity)
-str(Salinity)#439
-Salinity
 
-#Match 439  Community types with Salinity :
+#MEAN +SD+ CV of Salinity per year per station(site)============
+#Salinity was measured in one location per Stations (site):
+Salinity<-summarise(group_by(env,StationFront,year), MeanSalinity=mean(SoilPorewaterSalinity.ppt),
+                            SDSalinity=sd(SoilPorewaterSalinity.ppt),CVSalinity= SDSalinity/MeanSalinity)
+str(Salinity)#4227 obs. of  5 variables:
+head(Salinity)
+
+#GGPLOT of Salinity CHANGE across 10 years======== 
+levels(Salinity$StationFront)
+salt<-as.data.frame(Salinity)
+#subset 20 stations:
+s20<- salt[  salt$StationFront =="CRMS0002"|
+             salt$StationFront =="CRMS0086"|
+             salt$StationFront =="CRMS0065"|
+             salt$StationFront =="CRMS0061"|
+             salt$StationFront =="CRMS0035"|
+             salt$StationFront =="CRMS0038"|
+             salt$StationFront =="CRMS0039"|
+             salt$StationFront =="CRMS0089"|
+             salt$StationFront =="CRMS0004"|
+               salt$StationFront =="CRMS0003"|
+               salt$StationFront =="CRMS0290"|
+               salt$StationFront =="CRMS0260"|
+               salt$StationFront =="CRMS0097"|
+               salt$StationFront =="CRMS0117"|
+               salt$StationFront =="CRMS0171"|
+               salt$StationFront =="CRMS0575"|
+               salt$StationFront =="CRMS0567"|
+               salt$StationFront =="CRMS0574"|
+               salt$StationFront =="CRMS5167"|
+               salt$StationFront =="CRMS6302",]
+
+head(s20)
+s20$year<-as.factor(s20$year)
+
+#GGPLOT change in Swamp Salinity in 2007-2016
+SaltPlot<-ggplot(s20, aes(x = year, y = MeanSalinity, group=StationFront, color=StationFront))  
+SaltPlot1 <- SaltPlot + geom_point() + geom_line()
+SaltPlot2<- SaltPlot1 + theme_classic() +ggtitle("Salinity Change on Lousiana Coast (2007-2016)")
+SaltPlot2
+
+#There are some problematic plots too:
+CRMS6302<- salt[salt$StationFront =="CRMS6302",]
+CRMS6302
+CRMS6302b<- env[env$StationFront =="CRMS6302",]
+CRMS6302b
+
+#CV=SD/Mean over time over communities========
+# Measureof variability in salinity in each plot over time.
+# a cut-off  plots < 5
+Salinity<-summarise(group_by(env,StationFront,year), MeanSalinity=mean(SoilPorewaterSalinity.ppt),
+                    SDSalinity=sd(SoilPorewaterSalinity.ppt),CVSalinity= SDSalinity/MeanSalinity)
+str(Salinity)#4227 obs. of  5 variables:
+head(Salinity)
+
+CutOff<-summarise(Salinity, Cut = length(StationFront)) %>% filter(Cut > 5)
+range(CutOff$Cut)#6 13
+CutOff# A tibble: 388 × 2 = only 12 sites were underserveyed.
+
+Salinity2<- Salinity[ which(Salinity$StationFront %in%  CutOff$StationFront) , ]
+
+#Match Community types with Salinity=====
 veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
-str(veg)#293726 obs. of  24 variables:
-levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"  "Swamp"
-veg$Community<-factor(veg$Community, levels = c( "Swamp","Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
+str(veg)#133612 obs. of  24 variables
+levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"
+veg$Community<-factor(veg$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
 
-#Let us define the community-type in each StationFront based on year 2006 and n of Comms:
+#Let us define the community-type in each StationFront based on  n of Comms:
 StationComm<- group_by(veg,StationFront,Community ) %>% count(Count=StationFront)
 StationComm#It gives us count of communities per StationFront (862)
 SCwide<- spread(StationComm, key = Community, value = n, fill = 0)#make it wide
 SCwide$WhichMax<-colnames(SCwide)[apply(SCwide,1,which.max)]#while wide we can see which Comm is predominant
 SCwide
-StationCommDefined<-SCwide[, c(1,8)]
-colnames(StationCommDefined)[2] <- "Community" #Renaming WhichMAx back to Community
-View(StationCommDefined)
-
-#Matching Comm with Salinity Data
-SalinityCommunity<-left_join(Salinity, StationCommDefined, by = "StationFront")
-str(SalinityCommunity)
-head(SalinityCommunity)
-
-#plotting change in salinity across years in 4 communities:
-#Freshwater:
-Fresh <- SalinityCommunity[SalinityCommunity$Community=="Freshwater", c("MeanSalinity","year","StationFront","Community")]
-Fresh
-FreshWide<-spread(Fresh, key = year, value = MeanSalinity)
-FreshWide# Unfortunatly data was only recored in one year in Freshwater communities
-#WE can look at the Swamp and produce a script we can use later when more data available.
-
-#Change over years (Swamp only, 2008-2014)========
-env<-read.csv("CRMS_Soil.csv")
-Salinity<-summarise(group_by(env,StationFront,year), MeanSalinity=mean(SoilSalinity.ppt),
-                    SDSalinity=sd(SoilSalinity.ppt),CVSalinity= SDSalinity/MeanSalinity)
-str(Salinity)#439
-Salinity
-
-#Match 439 plots with Community type with Salinity :
-veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
-str(veg)#293726 obs. of  24 variables:
-levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"  "Swamp"
-veg$Community<-factor(veg$Community, levels = c( "Swamp","Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
-
-#Let us define the community-type in each StationFront based on year 2006 and n of Comms:
-StationComm<- group_by(veg,StationFront,Community ) %>% count(Count=StationFront)
-StationComm#It gives us count of communities per StationFront (862)
-SCwide<- spread(StationComm, key = Community, value = n, fill = 0)#make it wide
-SCwide$WhichMax<-colnames(SCwide)[apply(SCwide,1,which.max)]#compute which community is the most predominant
-SCwide#StationFronts (sites) were assigned with Comunity type based on their n of records per StationFront
-StationCommDefined<-SCwide[, c(1,8)]
+StationCommDefined<-SCwide[, c(1,7)]
+StationCommDefined
 colnames(StationCommDefined)[2] <- "Community" #Renaming WhichMAx back to Community
 
-#Matching Communities with Salinity Data
+#Looking at Community Switch in one random plot = CRMS0002_V54:
+#Subset only these 2007 station from entire data set to have a consistent set of plot across years:
+CRMS0002_V54  <- filter(t2, StationID == "CRMS0002_V54")
+CRMS0002_V54 #This plot would be classified as Brakish
+1   2007 CRMS0002_V54     Brackish     5
+2   2008 CRMS0002_V54     Brackish     4
+3   2009 CRMS0002_V54     Brackish     5
+4   2010 CRMS0002_V54     Brackish     7
+5   2011 CRMS0002_V54     Brackish     7
+6   2012 CRMS0002_V54     Brackish     6
+7   2013 CRMS0002_V54     Brackish     7
+8   2014 CRMS0002_V54     Brackish     7
+9   2015 CRMS0002_V54     Brackish     8
+10  2016 CRMS0002_V54 Intermediate     8
+
+
+#Matching Communities with Salinity Data by StationFront:
 SalinityCommunity<-left_join(Salinity, StationCommDefined, by = "StationFront")
+SalinityCommunity<-as.data.frame(SalinityCommunity)
+str(SalinityCommunity)#4227 obs. of  6 variables:
 
-#Only Swamp have stations recorded in two years that is for 2008 & 2014:
-Swamp <- SalinityCommunity[SalinityCommunity$Community=="Swamp", c("MeanSalinity","year","StationFront","Community")]
-Swamp
-SwampWide<-spread(Swamp, key = year, value = MeanSalinity)
-SwampWide
-S20 <- SwampWide[1:20, ] #First 21 rows
-S20
-S20$Salinity2008to2014<- ifelse(S20$`2008` - S20$`2014` < 0 , "increased", "decreased")
+#Compute mean CV(oef of variation = sd/mean) per year per Community:
+cv<- group_by(SalinityCommunity, Community,year)
+cvSum<-summarise(cv, Mean_CV = mean(CVSalinity), SD_CV = sd(CVSalinity))
+cvSum$year<-as.factor(cvSum$year)
+cvSum2<-cvSum[! cvSum$year == 2001 & !cvSum==2006, ] #years we do not care about
+cvSum2$Community<-factor(cvSum2$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
+cvSum3<- cvSum2[! is.na(cvSum2$Community),]
+cvSum3
+#GGPLOT cvSum:
+cvPlot<-ggplot(cvSum3, aes(x = year, y = Mean_CV, group=Community, shape=Community))  
+cvPlot1 <- cvPlot + geom_point(size=4)
+cvPlot1
+cvPlot1 +geom_line() + theme_classic() +ggtitle("Mean Salinity CV Change in 4 Communities on Lousiana Coast (2007-2016)")
 
-#GGPLOT change in Swamp Salinity in 2008-2014
-s20dat<-S20[ , c(1,2,5,7,9)]#columns we need for plotting
-s20dat
-s20data<-gather(s20dat, key = Year, value = MeanSalinity, 3:4)
-s20data
 
-SwampPlot<-ggplot(s20data, aes(x = Year, y = MeanSalinity, group=StationFront, color=Salinity2008to2014))  
-SwampPlot1 <- SwampPlot + geom_point() + geom_line()
-SwampPlot1 + theme_classic() +ggtitle("Salinity Change in Swamp Communities on Lousiana Coast (2008-2014)")
 
-#Other way of Salinity change computations (2008 to 2014):============
+#Salinity change computations (2008 to 2014):============
 e2008<-env[env$year == "2008",c("StationFront","SoilSalinity.ppt", "year")]
 dim(e2008)# 2546    2
 length(levels(droplevels(e2008$StationFront)))#152 instead of 2546!!! many stations were sampled multiple times
@@ -112,21 +151,6 @@ dim(eFrom2008to2014[eFrom2008to2014$Transition < 0,] )# 6 times was recorded an 
 plot(table(eFrom2008to2014$Transition), main = "Salinity Change from 2008 to 2014")
 table(eFrom2008to2014$Transition)
 
-
-#Looking at Community Switch in one random plot = CRMS0002_V54:=======
-#Subset only these 2007 station from entire data set to have a consistent set of plot across years:
-CRMS0002_V54  <- filter(t2, StationID == "CRMS0002_V54")
-CRMS0002_V54 
-1   2007 CRMS0002_V54     Brackish     5
-2   2008 CRMS0002_V54     Brackish     4
-3   2009 CRMS0002_V54     Brackish     5
-4   2010 CRMS0002_V54     Brackish     7
-5   2011 CRMS0002_V54     Brackish     7
-6   2012 CRMS0002_V54     Brackish     6
-7   2013 CRMS0002_V54     Brackish     7
-8   2014 CRMS0002_V54     Brackish     7
-9   2015 CRMS0002_V54     Brackish     8
-10  2016 CRMS0002_V54 Intermediate     8
 
 #BAR PLOT of Salinity & Communities in 2008============
 #setwd("~/Desktop/CRMS/CRMS") #set working directory
