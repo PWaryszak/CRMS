@@ -9,15 +9,16 @@ library(tidyverse)
 #We also remove all records from Swamp station as they contain no records our target species Phragmites:
 
 veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
+str(veg)#133612 obs. of  24 variables:
 samples2007<-veg[veg$year ==2007,] 
-length(levels(droplevels(samples2007$StationID)))#587 = number of good plots in 2007 
+length(levels(droplevels(samples2007$StationID)))#2558 = number of good plots in 2007 
 
 #Subset only these 2007 station from entire data set to have a
 #consistent set of plot across years:
 
-ourDF<- veg[ which (veg$StationID  %in%  samples2007$StationID), c("year", "StationID", "StationFront","StationBack", "SpecCode", "Cover", "Community", "CoverTotal")]
-str(ourDF)#10525 obs. of  8 variables:
-table(ourDF$year)# a quite balanced sampling!!!!
+DF2007to2016<- veg[ which (veg$StationID  %in%  samples2007$StationID), c("year", "StationID", "StationFront","StationBack", "SpecCode", "Cover", "Community", "CoverTotal")]
+str(DF2007to2016)#118570 obs. of  8 variables:
+table(DF2007to2016$year)# a quite balanced sampling!!!!
 
 #Reshape to wide format to compute plant composition indices:
 DF2007to2016$Cover <- ifelse(DF2007to2016$Cover ==0,0,1) #turning cover to presence/absence data
@@ -26,9 +27,15 @@ v<-DF2007to2016[,c("StationID","StationFront","Community","SpecCode","Cover","Co
 v.wide<-spread(v,key = SpecCode, value = Cover, fill = 0)#species indices can be computed in a wide format only= each species has its own column.
 #write.csv(v.wide, file = "VegConsistentPlotsData.csv", row.names = FALSE)
 
+#Subset one plot for trial RDA run for Christina:
+CRMS0002_V54<- v.wide[v.wide$StationID=="CRMS0002_V54",]
+dim(CRMS0002_V54)
+write.csv(CRMS0002_V54, file = "OnePlotRDATrail.csv")
+
 #The plots measured in 2007 were not always consistently surveyed across 10 years
 #We need to find them and remove them. Pivot in excel works better here for some reason
 #write.csv(v.wide, file = "VegConsistentPlotsData.csv", row.names = FALSE)
+#NEW CRMS_Marsh_Veg.csv created (see DataCleanin.R for details)
 
 Richness <-specnumber(v.wide[ , 6:218])
 range(Richness)#1 24 = our richness range per plot
