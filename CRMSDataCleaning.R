@@ -105,3 +105,52 @@ dim(veg3)#151489     24
 
 #Save it and commit to Github today [21June2017]
 write.csv(veg3, file = "MarshData.csv", row.names = FALSE)
+
+#4. Further cleaning:
+#Data contains 21 duplicates for example:
+CRMS0258_V70<- v.wide[v.wide$StationID=="CRMS0258_V70", ]
+CRMS0258_V70[,1:5]
+#Duplicated records as CRMS team measured the same plot twice withing one year sometimes.
+# + 566 plots that were not consistently measured.
+
+#Creating (08jul2017) new veg data with 2007 plots consistently surveyed across all years===========
+library(vegan)
+library(tidyverse)
+
+veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
+samples2007<-veg[veg$year ==2007,] 
+length(levels(droplevels(samples2007$StationID)))#3145 = number of plots in 2007 
+
+#Subset only these 2007 station from entire data set to have a
+#consistent set of plot across years:
+
+ourDF<- veg[ which (veg$StationID  %in%  samples2007$StationID), c("year", "StationID", "StationFront","StationBack", "SpecCode", "Cover", "Community", "CoverTotal")]
+str(ourDF)#136274 obs. of  8 variables:
+table(ourDF$year)# a balanced sampling!!!!
+
+# We decided to skip year 2006 (small n of plots in 2006)
+DF2007to2016<- ourDF[ourDF$year!="2006",]
+str(DF2007to2016)#129095 obs. of  8 variables:
+
+#Reshape to wide format to compute plant composition indices:
+DF2007to2016$Cover <- ifelse(DF2007to2016$Cover ==0,0,1) #turning cover to presence/absence data
+v<-DF2007to2016[,c("StationID","StationFront","Community","SpecCode","Cover","CoverTotal","year")] #select most important variables
+
+v.wide<-spread(v,key = SpecCode, value = Cover, fill = 0)#species indices can be computed in a wide format only= each species has its own column.
+write.csv(v.wide, file = "VegConsistentPlotsData.csv", row.names = FALSE)
+#The plots measured in 2007 were not always consistently surveyed across 10 years
+#We need to find them and remove them. Pivot in excel works better here for some reason
+write.csv(v.wide, file = "VegConsistentPlotsData.csv", row.names = FALSE)
+
+#After running pivot in excel we identyfied the plots we need to remove (lack of consistent surveys):
+#21 duplicated plots (errors?) and 566 undersurveyed plots:
+ErrorPlots<-read.csv("ErrorPlots.csv")# after pivoting in "VegConsistentPlotsData.csv"
+
+dim(veg)#151489     24
+veg2<- veg[ !veg$year=="2006",]
+dim(veg2)#144137     24
+
+veg3<- veg2[ which (veg2$StationID %in% ErrorPlots$StationID), ]
+dim(veg3)#10525    24
+write.csv(veg3, file = "CRMS_Marsh_Veg.csv", row.names = FALSE)
+
