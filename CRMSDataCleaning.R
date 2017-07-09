@@ -146,11 +146,18 @@ write.csv(v.wide, file = "VegConsistentPlotsData.csv", row.names = FALSE)
 #21 duplicated plots (errors?) and 566 undersurveyed plots:
 ErrorPlots<-read.csv("ErrorPlots.csv")# after pivoting in "VegConsistentPlotsData.csv"
 
+veg<- read.csv("CRMS_Marsh_Veg_OLD.csv")
 dim(veg)#151489     24
-veg2<- veg[ !veg$year=="2006",]
+veg2<- veg[ ! veg$year=="2006",]#remove plots of year 2006 (under-surveyed year)
 dim(veg2)#144137     24
 
-veg3<- veg2[ which (veg2$StationID %in% ErrorPlots$StationID), ]
-dim(veg3)#10525    24
-write.csv(veg3, file = "CRMS_Marsh_Veg.csv", row.names = FALSE)
+veg3<- veg2[ - which (veg2$StationID %in% ErrorPlots$StationID), ]
+dim(veg3)#133612     24
+write.csv(veg3, file = "CRMS_Marsh_VegNEW.csv", row.names = FALSE)
 
+#SOIL DATA=========
+#021jun2017 we downloaded a more robust data off CRMS website.
+#During clearning  11991 rows were removed as salinity was not measured there 
+#(Mostly due to deviced suffering from clogging by mud and organics, as per comments)
+env<-read.csv("CRMS_Soil.csv")
+str(env)#194840 obs. of  12 variables: 
