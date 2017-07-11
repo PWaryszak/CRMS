@@ -1,10 +1,9 @@
-#REDUNDANCY ANALYSIS (RDA) forward variable select for Christina
+#Produce data for RDA ANALYSIS ==========
 # Load packages
 library(vegan)
 library(tidyverse)
 
 #Create veg matrices for each year:
-
 #Let us subset the plots (stationID) present in year 2007 from all data.
 #We also remove all records from Swamp station as they contain no records our target species Phragmites:
 
@@ -27,10 +26,11 @@ v<-DF2007to2016[,c("StationID","StationFront","Community","SpecCode","Cover","Co
 v.wide<-spread(v,key = SpecCode, value = Cover, fill = 0)#species indices can be computed in a wide format only= each species has its own column.
 #write.csv(v.wide, file = "VegConsistentPlotsData.csv", row.names = FALSE)
 
+#FOR LOOP to produce veg matrices==========
 #Subset one plot for trial RDA run for Christina:
 CRMS0002_V54<- v.wide[v.wide$StationID=="CRMS0002_V54",]
 dim(CRMS0002_V54)
-write.csv(CRMS0002_V54, file = "OnePlotRDATrail.csv")
+#write.csv(CRMS0002_V54, file = "OnePlotRDATrail.csv")
 
 #The plots measured in 2007 were not always consistently surveyed across 10 years
 #We need to find them and remove them. Pivot in excel works better here for some reason
@@ -54,6 +54,93 @@ for ( i in unique(v.wide$year) ){
   write.csv(VegMatrix, file = paste0("VegMatrix_Year", i, ".csv"), row.names = FALSE)
   
 }
+
+
+#RDA Analysis===========
+#TRAIL
+#Subset one plot for trial RDA run for Christina:
+CRMS0002_V54<- v.wide[v.wide$StationID=="CRMS0002_V54",]
+dim(CRMS0002_V54)#10 by 409
+CRMS0002_V54[, 1:5] #years not in asc order
+#Put years in order first
+trail<-CRMS0002_V54[ order(CRMS0002_V54$year),]
+trail[,1:5]
+dim(trail)#10 409
+
+#Compute Disimilarity distances:
+DisTrail <- vegdist(trail[6:409], distance = "bray", binary = TRUE, upper=TRUE, diag=FALSE)
+class(DisTrail)
+
+#Convert Dis to matrix"
+m<-as.matrix(DisTrail)
+colnames(m) <- c( "Year2007", "Year2008", "Year2009","Year2010","Year2011","Year2012","Year2013","Year2014","Year2015","Year2016")
+rownames(m) <- c( "Year2007", "Year2008", "Year2009","Year2010","Year2011","Year2012","Year2013","Year2014","Year2015","Year2016")
+m[ row(m) == col(m) ] <- NA #replacing diagonal with NA
+m
+
+#Averaging by column:
+#This will givethe average dissimilarity of each year to all other years:
+str(m)
+m3<- colMeans(m2, na.rm = TRUE)
+m3
+
+#CREATE LOOP to repeat these actions across all plots:
+
+Output2 <- NULL #we need to set an empty shelf for data called Output
+
+for ( i in unique(v.wide$StationID) ){
+  #create a subset data per each plot (StationID)
+  subset_plot <- subset(v.wide, StationID== i)
+  
+  order_plot<- subset_plot[ order(subset_plot$year), ]
+  
+  subset_veg <- order_plot[ ,6:409] #subsetting veg matrix only
+  
+  Dissimilarity_Matrix <- vegdist(subset_veg, distance = "bray", binary = TRUE, upper=TRUE, diag=FALSE)
+  
+  m <- as.matrix(Dissimilarity_Matrix) #turning "dist" into "matrix to allow further computations
+  
+  m[ row(m) == col(m) ] <- NA #replacing diagonal with NA
+
+  m <- as.matrix(Dissimilarity_Matrix)
+  
+  m[ row(m) == col(m) ] <- NA #replacing diagonal with NA
+  
+  m_data_average<- as.data.frame( colMeans(m, na.rm = TRUE)) #Averaging by column:
+  
+  rownames(m_data_average)[1] <- c( "Year2007", "Year2008", "Year2009","Year2010","Year2011","Year2012","Year2013","Year2014","Year2015","Year2016")
+  colnames(m_data_average)[1] <- "Average_Dissimilarity"
+  
+  namePlot <- i
+  saveoutput <- data.frame(m_data_average, StationID = namePlot)
+  Output2 <- rbind(Output, saveoutput)
+}
+
+str(Output2)
+#write.csv(Output, file="Output.csv")
+
+#Running the code outside for loop:
+subset_plot <- subset(v.wide, StationID=="CRMS0002_V54")
+dim(subset_plot)#10 409
+order_plot<- subset_plot[ order(subset_plot$year), ]
+order_plot
+subset_veg <- subset_plot[, 6:409 ]
+Dissimilarity_Matrix <- vegdist(subset_veg, distance = "bray", binary = TRUE, upper=TRUE, diag=FALSE)
+m <- as.matrix(Dissimilarity_Matrix)
+colnames(m) <- c( "Year2007", "Year2008", "Year2009","Year2010","Year2011","Year2012","Year2013","Year2014","Year2015","Year2016")
+rownames(m) <- c( "Year2007", "Year2008", "Year2009","Year2010","Year2011","Year2012","Year2013","Year2014","Year2015","Year2016")
+m[ row(m) == col(m) ] <- NA #replacing diagonal with NA
+m_data<-as.data.frame(m)
+m_data
+m_data_average<- as.data.frame( colMeans(m, na.rm = TRUE)) #Averaging by column:
+rownames(m_data_average) <- c( "Year2007", "Year2008", "Year2009","Year2010","Year2011","Year2012","Year2013","Year2014","Year2015","Year2016")
+colnames(m_data_average)[1] <- "Average_Dissimilarity"
+m_data_average#This will give us the average dissimilarity of each year to all other years:
+data_M <- assign(paste0("VegMatrixAverage_Plot_", "Plot"), m_data_average)
+data_M
+namelm <- paste0("Plot.", i)
+saveoutput <- data.frame(datalm, Species=namelm)
+Output <- rbind(Output, saveoutput)
 
 
 #Salinity change in subsample==========
