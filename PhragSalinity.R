@@ -3,20 +3,19 @@ library(tidyverse)
 
 veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
 str(veg)#133612 obs. of  24 variables:
-levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"  "Swamp"
+levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline" 
 length(levels(veg$SpecCode))#430, see comments in "CRMSDataCleaning.R" file to learn more
 veg$Community<-factor(veg$Community, levels = c( "Swamp","Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
 
 #Filter out plots with Phrag only:
 Phragmites<-filter(veg, SpecCode == "Phraaust") #subsetting only data we are most interested in code 1&2 = tavy
 str(Phragmites)#799 obs. of  24 variables:
-View(Phragmites)
 
 PhragPresence<-as.data.frame(table(Phragmites$StationFront))
 PhragPresence#Phrag occurences by Station (site)
 PhragStations<-PhragPresence[PhragPresence$Freq > 0 , ]#selecting Station with more than 0 cover of Phrag
-Abundant <- PhragStations[order(- PhragStations$Freq),] #sorting in descending mannert to have a look 
-Abundant#what stations are the most abundant in Phragmites?
+PhragStationsDescending <- PhragStations[order(- PhragStations$Freq),] #sorting in descending mannert to have a look 
+PhragStationsDescending#what stations are the most abundant in Phragmites?
 
 colnames(PhragStations)[1] <- "StationFront" #renaming Var1 column to what it is = StationFront.
 length(levels(droplevels(PhragStations$StationFront)))#52 Stations recorded Phrag in their plots that have consiste salinity data
@@ -43,36 +42,39 @@ envPhragSalinity<-summarise(group_by(envPhrag2007to2016,StationFront,year), Mean
 envPhragSalinity$StationFront.Year<-interaction(envPhragSalinity$StationFront,envPhragSalinity$year)
 
 #Merge Phrag data with salinity data:
-#Produce new unique column "StationFront.Year" to be merged by:
+#Produce new unique column "StationFront.Year" to be merged by with Phrag:
 Phragmites$StationFront.Year<-interaction(Phragmites$StationFront, Phragmites$year)
 Phrag<- Phragmites[ , c("StationFront.Year","StationID", "Cover","SpecCode")]
 
 PhragCoverSalinity <- dplyr::full_join(Phrag,envPhragSalinity, by = "StationFront.Year" )
-dim(PhragCoverSalinity)# 1019   obse = initial Phrag dimensions. YAY!
-head(PhragCoverSalinity)
+dim(PhragCoverSalinity)# 1019  obs.
+head(PhragCoverSalinity, n=1)
+#StationFront.Year  StationID   Cover SpecCode StationFront year MeanSalinity SDSalinity CVSalinity
+#1 CRMS0662.2010  CRMS0662_V50  0.25  Phraaust     CRMS0662 2010     4.405882   1.129419  0.2563435
+
 
 #GGPLOT with not outliers:
 p <- ggplot(PhragCoverSalinity, aes( MeanSalinity,Cover))
 p2<-p + geom_point(aes(color=MeanSalinity)) +theme_classic()
 p2 +ggtitle("Mean Salinity and Phragmites Cover over 2007-2016 period")
 
-#Two outliers + NAs to be removed:
+#Two extreme outliers were identified in p2 plot + NAs = to be removed:
 PhragCoverSalinity2<-PhragCoverSalinity[- which.max(PhragCoverSalinity$MeanSalinity),]
 PhragCoverSalinity3<-PhragCoverSalinity2[- which.max(PhragCoverSalinity2$MeanSalinity),]
 PhragCoverSalinity4<-PhragCoverSalinity3[ - is.na(PhragCoverSalinity2$MeanSalinity),]
 PhragCoverSalinity4$year<-as.factor(PhragCoverSalinity4$year)
-dim(PhragCoverSalinity4)#796   9
+dim(PhragCoverSalinity4)#1016    9
 PhragCoverSalinity5<-PhragCoverSalinity4[!is.na(PhragCoverSalinity4$StationFront),]
-dim(PhragCoverSalinity5) #780 9
+dim(PhragCoverSalinity5) #1000    9
 
-#GGPLOT with not outliers:
+#GGPLOT with no outliers:
 pp <- ggplot(PhragCoverSalinity5, aes( MeanSalinity,Cover))
 pp2<-pp + geom_point(aes(color=MeanSalinity)) +theme_classic()
 pp2 +ggtitle("Mean Salinity and Phragmites Cover over 2007-2016 period")
 
 
 #Phrag Cover Change to Salinity Change Correlation=============
-dim(PhragCoverSalinity5) #780 9 - see above how we got here.
+dim(PhragCoverSalinity5) #1000    9 - see above how we got here.
 #spread Cover over years 
 CoverChange<- PhragCoverSalinity5[ , c("StationID", "Cover", "StationFront", "year")]
 CoverChangeWide <- spread(CoverChange, key = year, value = Cover)
