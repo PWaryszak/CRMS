@@ -108,18 +108,51 @@ SalinityChangeWide$SalinityChange9<- - SalinityChangeWide$`2015`+ SalinityChange
 PhragCoverSalinityChange<- cbind (CoverChangeWide, SalinityChangeWide)
 head(PhragCoverSalinityChange)
 
-#GGPLOT of change of cover vs salinity:
-Change1 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange1,SalinityChange1))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2007-2008 period")+geom_hline(yintercept=0, linetype = 2)
-Change2 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange2,SalinityChange2))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2008-2009 period")+geom_hline(yintercept=0, linetype = 2)
-Change3 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange3,SalinityChange3))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2009-2010 period")+geom_hline(yintercept=0, linetype = 2)
-Change4 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange4,SalinityChange4))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2010-2011 period")+geom_hline(yintercept=0, linetype = 2)
-Change5 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange5,SalinityChange5))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2011-2012 period")+geom_hline(yintercept=0, linetype = 2)
-Change6 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange6,SalinityChange6))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2012-2013 period")+geom_hline(yintercept=0, linetype = 2)
-Change7 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange7,SalinityChange7))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2013-2014 period")+geom_hline(yintercept=0, linetype = 2)
-Change8 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange8,SalinityChange8))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2014-2015 period")+geom_hline(yintercept=0, linetype = 2)
-Change9 <- ggplot(data = PhragCoverSalinityChange, aes( CoverChange9,SalinityChange9))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2015-2016 period")+geom_hline(yintercept=0, linetype = 2)
+#Let us define the community-type in each StationFront based on n of Comms to merge with above PhragCoverSalinityChange:
+StationComm<- group_by(veg,StationFront,Community ) %>% count(Count=StationFront)
+StationComm#It gives us count of communities per StationFront (740)
+SCwide<- spread(StationComm, key = Community, value = n, fill = 0)#make it wide
+SCwide$WhichMax<-colnames(SCwide)[apply(SCwide,1,which.max)]#while wide we can see which Comm is predominant
+SCwide
+StationCommDefined<-SCwide[, c(1,7)]
+StationCommDefined
+colnames(StationCommDefined)[2] <- "Community" #Renaming WhichMAx back to Community
+
+#Merge StationDefined with PhragCoverSalinityChange:
+PhragCoverSalinityChange2<- PhragCoverSalinityChange[ ,c(13:23, 34:42)]
+names(PhragCoverSalinityChange2)
+PhragCoverSalinityChange3<- left_join(PhragCoverSalinityChange2, StationCommDefined, by = "StationFront")
+names(PhragCoverSalinityChange3)#Community is in so we can color code it in following ggplot:
+
+#GGPLOT of change of cover vs salinity color-coded by Community type:
+PlotChange1 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange1,SalinityChange1, colour = Community, size=CoverChange1))+ geom_point() +theme_classic()+ggtitle("Over 2007-2008 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange2 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange2,SalinityChange2, colour = Community, size=CoverChange2))+ geom_point() +theme_classic()+ggtitle("Over 2008-2009 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange3 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange3,SalinityChange3, colour = Community, size=CoverChange3))+ geom_point() +theme_classic()+ggtitle("Over 2009-2010 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange4 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange4,SalinityChange4, colour = Community, size=CoverChange4))+ geom_point() +theme_classic()+ggtitle("Over 2010-2011 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange5 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange5,SalinityChange5, colour = Community, size=CoverChange5))+ geom_point() +theme_classic()+ggtitle("Over 2011-2012 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange6 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange6,SalinityChange6, colour = Community, size=CoverChange6))+ geom_point() +theme_classic()+ggtitle("Over 2012-2013 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange7 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange7,SalinityChange7, colour = Community, size=CoverChange7))+ geom_point() +theme_classic()+ggtitle("Over 2013-2014 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange8 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange8,SalinityChange8, colour = Community, size=CoverChange8))+ geom_point() +theme_classic()+ggtitle("Over 2014-2015 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange9 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange9,SalinityChange9, colour = Community, size=CoverChange9))+ geom_point() +theme_classic()+ggtitle("Over 2015-2016 period")+geom_hline(yintercept=0, linetype = 2)
 
 require(gridExtra)
-grid.arrange(Change1,Change2,Change3, ncol=3)
-grid.arrange(Change4,Change5,Change6, ncol=3)
-grid.arrange(Change7,Change8,Change9, ncol=3)
+grid.arrange(PlotChange1,PlotChange2,PlotChange3, ncol=3)
+grid.arrange(PlotChange4,PlotChange5,PlotChange6, ncol=3)
+grid.arrange(PlotChange7,PlotChange8,PlotChange9, ncol=3)
+
+#SIMPLE GGPLOT of change of cover vs salinity:
+PlotChange1 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange1,SalinityChange1))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2007-2008 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange2 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange2,SalinityChange2))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2008-2009 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange3 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange3,SalinityChange3))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2009-2010 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange4 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange4,SalinityChange4))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2010-2011 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange5 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange5,SalinityChange5))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2011-2012 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange6 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange6,SalinityChange6))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2012-2013 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange7 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange7,SalinityChange7))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2013-2014 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange8 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange8,SalinityChange8))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2014-2015 period")+geom_hline(yintercept=0, linetype = 2)
+PlotChange9 <- ggplot(data = PhragCoverSalinityChange3, aes( CoverChange9,SalinityChange9))+ geom_point()+geom_smooth() +theme_classic()+ggtitle("Over 2015-2016 period")+geom_hline(yintercept=0, linetype = 2)
+
+
+require(gridExtra)
+grid.arrange(PlotChange1,PlotChange2,PlotChange3, ncol=3)
+grid.arrange(PlotChange4,PlotChange5,PlotChange6, ncol=3)
+grid.arrange(PlotChange7,PlotChange8,PlotChange9, ncol=3)
