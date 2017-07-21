@@ -161,3 +161,95 @@ write.csv(veg3, file = "CRMS_Marsh_VegNEW.csv", row.names = FALSE)
 #(Mostly due to deviced suffering from clogging by mud and organics, as per comments)
 env<-read.csv("CRMS_Soil.csv")
 str(env)#194840 obs. of  12 variables: 
+
+
+#PHRAG Cover, Phrag PRESENCE, Salinity merging with Veg Data============
+#these our extra variable to be matched with veg data for RDA analysis
+
+#Define the StationFront based on  presence of Phragmites:
+#Load data from your directory or straigh from the github:
+veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
+#OR LOAD OFF WEB:
+#veg<-read.csv(url("https://raw.githubusercontent.com/PWaryszak/CRMS/master/CRMS_Marsh_Veg.csv"))
+#str(veg)#133612 obs. of  24 variables:
+str(veg)#133612 obs. of  24 variables:
+samples2007<-veg[veg$year ==2007,] 
+length(levels(droplevels(samples2007$StationID)))#2558 = number of good plots in 2007 
+#Subset only these 2007 station from entire data set to have a
+#consistent set of plot across years:
+DF2007to2016<- veg[ which (veg$StationID  %in%  samples2007$StationID), c("year", "StationID", "StationFront","StationBack", "SpecCode", "Cover", "Community", "CoverTotal")]
+str(DF2007to2016)#118570 obs. of  8 variables:
+#Reshape to wide format to compute plant composition indices:
+DF2007to2016$Cover <- ifelse(DF2007to2016$Cover ==0,0,1) #turning cover to presence/absence data
+v<-DF2007to2016[,c("StationID","StationFront","Community","SpecCode","Cover","CoverTotal","year")] #select most important variables
+v.wide<-spread(v,key = SpecCode, value = Cover, fill = 0)#species indices can be computed in a wide format only= each species has its own column.
+v.wide$PhragPresence<-ifelse(v.wide$Phraaust == 1, "PhragPresent", "PhragAbsent")
+
+#Mean Salinity:
+#We got an updated(bigger) file on soil data of CRMS site. To free up some space on my Github
+#I created a website where these clean files are not hanging (= https://sites.google.com/site/phragmitesproject/)
+#These files can be loaded into your R via url:
+env<-read.csv(url("https://sites.google.com/site/phragmitesproject/file-cabinet/CRMS_Soil.csv?attredirects=0"))
+#env<-read.csv("CRMS_Soil.csv")# this works only if you env data is downloaded to your working directory
+str(env)#194840 obs. of  12 variables // $ StationID: Factor w/ 388 levels
+
+table(env$year)#sampling effort across years
+#2001  2006  2007  2008  2009  2010  2011  2012  2013  2014  2015  2016  2017 
+#   2  3165 12903 20298 24173 24200 22979 23370 19983 13536 11770 15697  2764 #Measurements were uneven.
+#So...
+#Remove year 2001, 2006 and 2017:
+env1<-env[! env$year=="2001" ,] #removing low n years
+env2<-env1[! env1$year=="2006" ,] #removing low n years
+env2007to2016<-env2[! env2$year=="2017" ,] #removing low n years
+
+table(env2007to2016$year)
+#2007  2008  2009  2010  2011  2012  2013  2014  2015  2016 
+#2903 20298 24173 24200 22979 23370 19983 13536 11770 15697
+
+#CV of Salinity across years
+#CV = coefficient of variation = sd/mean
+#to measure variability in salinity in each site over time. 
+#Compute mean salinity per StationFront per year:
+env2007to2016_Salinity<-summarise(group_by(env2007to2016,StationFront,year), MeanSalinity=mean(SoilPorewaterSalinity.ppt),
+                                  SDSalinity=sd(SoilPorewaterSalinity.ppt),CVSalinity= SDSalinity/MeanSalinity)
+env2007to2016_Salinity # data frame [818 x 5]
+#Produce new unique column "StationFront.Year" to be merged by with veg accordingly:
+env2007to2016_Salinity$StationFront.Year<-interaction(env2007to2016_Salinity$StationFront,env2007to2016_Salinity$year)
+env2007to2016_Salinity
+#Merge veg data with salinity data:
+table(v.wide$year)#veg data is alraed cleand = from 2007 to 2016:
+#2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 
+#2558 2559 2558 2558 2558 2558 2558 2558 2558 2557
+
+v.wide$StationFront.Year<-interaction(v.wide$StationFront, v.wide$year)
+names(v.wide)
+v.wide2 <- v.wide[ , - c(2,5)]#removing "StationFront"  & "year" to avoid repetition in left_join 
+
+PhragPresenceSalinity <- dplyr::left_join(v.wide2,env2007to2016_Salinity, by = "StationFront.Year" )
+names(PhragPresenceSalinity)
+PhragPresenceSalinity$StationID.Year<-interaction(PhragPresenceSalinity$StationID, PhragPresenceSalinity$year)
+
+#Phrag Cover to merge later on to salinity and phrag presence and all:
+PhragCover<- veg[veg$SpecCode=="Phraaust", c("StationID", "year", "Cover")]
+dim(PhragCover)#799 3
+colnames(PhragCover)[3]<- "PhragCover"
+PhragCover$StationID.Year<-interaction(PhragCover$StationID, PhragCover$year)
+head(PhragCover, n=21)
+PhragCover2<-PhragCover[ , - c(1,2)]#removing "StationID"  & "year" to avoid repetition in left_join 
+
+EntireData<-dplyr::left_join( PhragPresenceSalinity, PhragCover2, by = "StationID.Year" )
+EntireData$PhragCover[is.na(EntireData$PhragCover)] <- 0 #tur NAs into zeros
+table(EntireData$PhragCover)#lots of zeros = 24982
+sum(is.na(EntireData$PhragCover))#YAY! no NA-s!
+
+#write.csv(EntireData, file = "VegEnvData.csv", row.names = FALSE) #this is our entire data
+#that matches together veg and env variables. I will hang it on our Phrag web
+
+#To seperate EntireData into veg and env data frames again, go:
+CRMSveg<- EntireData[ , 4:407] #this is our veg only matrix
+CRMSenv<- EntireData[ , -c(4:407)]#this is our env data that matches veg only matrix above
+
+#NOTES:
+#Now you can load VegData  and EnvData off web:
+CRMSveg<- read.csv(url("https://sites.google.com/site/phragmitesproject/file-cabinet/VegDataAll.csv?attredirects=0"))
+CRMSenv<- read.csv(url("https://sites.google.com/site/phragmitesproject/file-cabinet/EnvDataAll.csv?attredirects=0"))
