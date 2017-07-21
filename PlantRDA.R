@@ -186,7 +186,7 @@ plot(fresh_rda, display=c("cn", "sp", "lc"), main="Lousiana Freshwhater Communit
 
 plot(fresh_rda, display=c("lc","cn"), main="Lousiana Freshwhater Communities")
 
-# GRAPHING RDA with ggplot2
+# GRAPHING Freshwater RDA with ggplot2==========
 # Use the "scores" function, then use the elements of it, casting them to data frames, e.g.:
 df.sites <- as.data.frame( scores(fresh_rda)$sites )
 
@@ -249,5 +249,202 @@ anova.cca(fresh_rda, step=100)
 #Model: rda(formula = df.response1 ~ MeanSalinity + PhragCover, data = freshEnv)
 #            Df  Variance      F Pr(>F)    
 #Model       2 0.0000209 7.2384  0.001 *** ///  Residual 5388 0.0077784 
+
+
+# GRAPHING brackish RDA with ggplot2==========
+# Use the "scores" function, then use the elements of it, casting them to data frames, e.g.:
+df.sites <- as.data.frame( scores(brack_rda)$sites )
+
+# The environment variables are in another element, e.g.:
+# $CCA$biplot gives the biplot coords for the env variables 
+df.env <- as.data.frame( brack_rda$CCA$biplot[, 1:2] )
+df.env
+df.env$var <- rownames( brack_rda$CCA$biplot )
+
+df.env$xOrg <- 0 #for plotting arrows
+df.env$yOrg <- 0 #for plotting arrows
+
+summary(brack_rda)
+#Accumulated constrained eigenvalue, Importance of components:
+                        #RDA1      RDA2
+#Eigenvalue            0.002984 4.355e-05
+#Proportion Explained  0.985620 1.438e-02
+#Cumulative Proportion 0.985620 1.000e+00
+
+#Biplot scores for constraining variables
+
+#RDA1    RDA2 PC1 PC2 PC3 PC4
+#MeanSalinity  0.99960 0.02816   0   0   0   0
+#PhragCover   -0.02523 0.99968   0   0   0   0
+
+
+# R2 of the variance explained
+R2 <- RsquareAdj(brack_rda)$adj.r.squared
+R2#0.06896562
+RsquareAdj(brack_rda)
+
+#RDAs explained = Proportion explained *R2 *100%
+0.985620*0.06896562*100 #RDA1 = 6.79%
+1.438e-02*0.06896562*100 #RDA2 = 0.09%
+
+
+brackPlot <- ggplot(data=df.sites, aes(x=RDA1, y=RDA2 ) ) +
+  xlab('RDA1 (6.79 % of variation)') + 
+  ylab('RDA2 (0.09 % of variation)') +
+  geom_hline(yintercept=0, colour="black", linetype="dotted" ) +
+  geom_vline(xintercept=0, colour="black", linetype="dotted" ) +
+  geom_segment(data=df.env, aes(x=xOrg, y=yOrg, xend=RDA1, yend=RDA2), size=3,
+               colour="red", arrow=arrow(length=unit(10,"point") ) ) + geom_point()+
+  #geom_text(data=df.env, aes(x=RDA1, y=RDA2, label=var), size=8, colour="darkblue", parse=T) 
+  
+  annotate("text", x = 0.9, y = -0.15, label = c("Mean Salinity"), size=8, color="darkgreen") +
+  annotate("text", x = 0, y = 1.1, label = c("Phrag Cover"), size=8, color="darkblue") + theme_bw()
+brackPlot+ theme(axis.text.x = element_text(size=22,hjust=.5,vjust=.5,face="plain"),
+                 axis.text.y = element_text(size=22,hjust=1,vjust=0,face="plain"),  
+                 axis.title.x = element_text(size=22,hjust=.5,vjust=0,face="plain"),
+                 axis.title.y = element_text(size=22),
+                 legend.title = element_text(size=22),
+                 plot.title = element_text(size=22, lineheight=1.8, face="bold", hjust = 0.5)) +ggtitle("Brackish Plant Community")
+
+#ggsave('brackPlot.jpeg', graf, dpi=300, height=5, width=8)
+#ggsave('brackPlot.pdf', graf, dpi=300, height=35, width=35, units='cm')
+#ggsave('brackPlot.eps', graf, dpi=300, height=34, width=34, units='cm')
+
+# GRAPHING Intermediate RDA with ggplot2==========
+# Use the "scores" function, then use the elements of it, casting them to data frames, e.g.:
+df.sites <- as.data.frame( scores(inter_rda)$sites )
+
+# The environment variables are in another element, e.g.:
+# $CCA$biplot gives the biplot coords for the env variables 
+df.env <- as.data.frame( inter_rda$CCA$biplot[, 1:2] )
+df.env
+df.env$var <- rownames( inter_rda$CCA$biplot )
+
+df.env$xOrg <- 0 #for plotting arrows
+df.env$yOrg <- 0 #for plotting arrows
+
+summary(inter_rda)
+#Accumulated constrained eigenvalue, Importance of components:
+#RDA1      RDA2
+#                        RDA1      RDA2
+#Eigenvalue            0.0001519 1.741e-06
+#Proportion Explained  0.9886700 1.133e-02
+#Cumulative Proportion 0.9886700 1.000e+00
+
+#Biplot scores for constraining variables
+    #          RDA1      RDA2 PC1 PC2 PC3 PC4
+#MeanSalinity 0.008098  0.999967   0   0   0   0
+#PhragCover   0.999980 -0.006314   0   0   0   0
+
+# R2 of the variance explained
+R2 <- RsquareAdj(inter_rda)$adj.r.squared
+R2#0.008729309
+RsquareAdj(inter_rda)
+
+#RDAs explained = Proportion explained *R2 *100%
+0.9886700*0.008729309*100 #RDA1 = 0.86%
+1.133e-02*0.008729309*100 #RDA2 = 0.01%
+
+
+interPlot <- ggplot(data=df.sites, aes(x=RDA1, y=RDA2 ) ) +
+  xlab('RDA1 (0.86 % of variation)') + 
+  ylab('RDA2 (0.01 % of variation)') +
+  geom_hline(yintercept=0, colour="black", linetype="dotted" ) +
+  geom_vline(xintercept=0, colour="black", linetype="dotted" ) +
+  geom_segment(data=df.env, aes(x=xOrg, y=yOrg, xend=RDA1, yend=RDA2), size=3,
+               colour="red", arrow=arrow(length=unit(10,"point") ) ) + geom_point()+
+  #geom_text(data=df.env, aes(x=RDA1, y=RDA2, label=var), size=8, colour="darkblue", parse=T) 
+  
+  annotate("text", x = 0.9, y = -0.1, label = c("Phrag Cover"), size=8, color="darkgreen") +
+  annotate("text", x = 0, y = 1.5, label = c("Mean Salinity"), size=8, color="darkblue") + theme_bw()
+interPlot+ theme(axis.text.x = element_text(size=22,hjust=.5,vjust=.5,face="plain"),
+                 axis.text.y = element_text(size=22,hjust=1,vjust=0,face="plain"),  
+                 axis.title.x = element_text(size=22,hjust=.5,vjust=0,face="plain"),
+                 axis.title.y = element_text(size=22),
+                 legend.title = element_text(size=22),
+                 plot.title = element_text(size=22, lineheight=1.8, face="bold", hjust = 0.5)) +ggtitle("Intermediate Plant Community")
+
+#ggsave('interPlot.jpeg', graf, dpi=300, height=5, width=8)
+#ggsave('interPlot.pdf', graf, dpi=300, height=35, width=35, units='cm')
+#ggsave('interPlot.eps', graf, dpi=300, height=34, width=34, units='cm')
+
+# GRAPHING Saline RDA with ggplot2==========
+# Use the "scores" function, then use the elements of it, casting them to data frames, e.g.:
+df.sites <- as.data.frame( scores(sal_rda)$sites )
+
+# The environment variables are in another element, e.g.:
+# $CCA$biplot gives the biplot coords for the env variables 
+df.env <- as.data.frame( sal_rda$CCA$biplot[, 1:2] )
+df.env
+df.env$var <- rownames( sal_rda$CCA$biplot )
+
+df.env$xOrg <- 0 #for plotting arrows
+df.env$yOrg <- 0 #for plotting arrows
+
+summary(sal_rda)
+#Accumulated constrained eigenvalue, Importance of components:
+                        #RDA1      RDA2
+#Eigenvalue            0.01135 7.042e-06
+#Proportion Explained  0.99938 6.200e-04
+#Cumulative Proportion 0.99938 1.000e+00
+
+#Biplot scores for constraining variables
+#                  RDA1    RDA2 PC1 PC2 PC3 PC4
+#MeanSalinity  0.99957 0.02942   0   0   0   0
+#PhragCover   -0.06417 0.99794   0   0   0   0
+
+
+# R2 of the variance explained
+R2 <- RsquareAdj(sal_rda)$adj.r.squared
+R2#0.07688748
+RsquareAdj(sal_rda)
+
+#RDAs explained = Proportion explained *R2 *100%
+0.07688748*0.99938*100 #RDA1 = 7.68%
+0.07688748*6.200e-04*100 #RDA2 = 0.01%
+
+
+salPlot <- ggplot(data=df.sites, aes(x=RDA1, y=RDA2 ) ) +
+  xlab('RDA1 (7.68 % of variation)') + 
+  ylab('RDA2 (0.01 % of variation)') +
+  geom_hline(yintercept=0, colour="black", linetype="dotted" ) +
+  geom_vline(xintercept=0, colour="black", linetype="dotted" ) +
+  geom_segment(data=df.env, aes(x=xOrg, y=yOrg, xend=RDA1, yend=RDA2), size=3,
+               colour="red", arrow=arrow(length=unit(10,"point") ) ) + geom_point()+
+  #geom_text(data=df.env, aes(x=RDA1, y=RDA2, label=var), size=8, colour="darkblue", parse=T) 
+  
+  annotate("text", x = 0.9, y = -0.1, label = c("Mean Salinity"), size=8, color="darkgreen") +
+  annotate("text", x = 0.1, y = 1.3, label = c("Phrag Cover"), size=8, color="darkblue") + theme_bw()
+salPlot+ theme(axis.text.x = element_text(size=22,hjust=.5,vjust=.5,face="plain"),
+                 axis.text.y = element_text(size=22,hjust=1,vjust=0,face="plain"),  
+                 axis.title.x = element_text(size=22,hjust=.5,vjust=0,face="plain"),
+                 axis.title.y = element_text(size=22),
+                 legend.title = element_text(size=22),
+                 plot.title = element_text(size=22, lineheight=1.8, face="bold", hjust = 0.5)) +ggtitle("Saline Plant Community")
+
+#ggsave('salPlot.jpeg', graf, dpi=300, height=5, width=8)
+#ggsave('salPlot.pdf', graf, dpi=300, height=35, width=35, units='cm')
+#ggsave('salPlot.eps', graf, dpi=300, height=34, width=34, units='cm')
+
+
+#Saving RDA outputs in a seperate files=========
+str(fresh_rda)#List of 12
+save(fresh_rda, file = "fresh_rda.rda")
+getwd()#"C:/Users/cbirnbaum/Documents/crms_data_Christina"
+load("fresh_rda.rda")#load the rda object back to R
+
+str(sal_rda)#List of 12
+save(sal_rda, file = "sal_rda.rda")
+load("sal_rda.rda") #load the rda object back to R
+
+str(brack_rda)#List of 12
+save(brack_rda, file = "brack_rda.rda")
+load("brack_rda.rda") #load the rda object back to R
+
+str(inter_rda)#List of 12
+save(inter_rda, file = "inter_rda.rda")
+load("inter_rda.rda") #load the rda object back to R
+
+
 
 
