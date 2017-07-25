@@ -19,7 +19,7 @@ setwd("~/Desktop/CRMS/CRMS")
 veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
 str(veg)#295644 obs. of  28 variables:
 names(veg)
-[1] "StationID"  #Site.plot                        
+[1] "StationID"  #Site.plot = unit of observation (plot)                    
 [2] "StationFront" #Site = name before hypen
 #for example for StationID "CRMS0002-V54" it is "CRMS0002"
 [3] "StationBack"   # plot = name after hypen
