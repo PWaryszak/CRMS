@@ -11,6 +11,7 @@ veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv
 str(veg)#133612 obs. of  24 variables:
 samples2007<-veg[veg$year ==2007,] 
 length(levels(droplevels(samples2007$StationID)))#2558 = number of good plots in 2007 
+length(levels(droplevels(samples2007$StationFront)))#282 = number of stations (sites) in 2007 
 
 #Subset only these 2007 station from entire data set to have a
 #consistent set of plot across years:
@@ -54,7 +55,7 @@ m3<- colMeans(m2, na.rm = TRUE)
 m3
 
 
-#CREATE FOR LOOP to repeat these actions across all plots:
+#FOR LOOP to compute dissimilarity across all years===================
 
 Output2 <- NULL #we need to set an empty shelf for data called Output
 
@@ -108,7 +109,7 @@ StationCommDefined<-SCwide[, c(1,7)]
 colnames(StationCommDefined)[2] <- "Community" #Renaming WhichMAx back to Community
 StationCommDefined #320 stationFronts
 
-#GGPLOT of variability over time=========
+#GGPLOT of Dissimilarity over time=========
 
 #Join Dissimilarity Output2 with Community-type variables:
 DisOutput<-read.csv("DissimilarityOutput.csv")#running For loop takes times so I saved output in this file
@@ -118,14 +119,15 @@ head(DissCommunity, n= 1)
 #Average_Dissimilarity    StationID year2rest StationFront Community
 #    0.3544974          CRMS0002_V54  Year2007     CRMS0002  Brackish
 length(levels(DissCommunity$StationID))#2558 YAY! as many as before for loop.
+length(unique(DissCommunity$StationFront))#282 YAY! as many as before for loop.
 unique(DissCommunity$year2rest)#10 levels
 
 #GGPLOT:
 overtime<-summarize(group_by(DissCommunity,year2rest,Community), MeanDiss = mean(Average_Dissimilarity))
 overtime$Community<-factor(overtime$Community, levels = c("Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
-VariabilityPlot <- ggplot(overtime, aes(y = Community, x = MeanDiss,color=year2rest,shape =year2rest))+ geom_point(position = "jitter", size=4)
-VariabilityPlot + scale_shape_manual(values = c(15,15,16,16,18,18,24,24,13,13)) +theme_classic() +ggtitle("Mean community variability across time")
-
+VariabilityPlot <- ggplot(overtime, aes(x = Community, y = MeanDiss,color=year2rest,shape =year2rest))+ geom_point(position = "jitter", size=4)
+VariabilityPlot1<-VariabilityPlot + scale_shape_manual(values = c(15,15,16,16,18,18,24,24,13,13)) +theme_classic() +ggtitle("Mean community variability over 2007-2016 period")
+VariabilityPlot1 +ylab("Mean Dissimilarity of One Year to All Other Years")
 
 #Run RDA by Community==============
 library(vegan);library(ggplot2);library(tidyr);library(dplyr);require(grid)
