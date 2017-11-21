@@ -56,7 +56,7 @@ ggsave(filename = "RichnessBarplot.png", width = 10, height = 4, dpi = 300)#save
 
 
 #Plot histogram of Richness with grey background of all TotRichness values=========
-#Source:https://drsimonj.svbtle.com/plotting-background-data-for-groups-with-ggplot2
+#Web source:https://drsimonj.svbtle.com/plotting-background-data-for-groups-with-ggplot2
 
 #Frequencies of Richness Values acros 4 Communities (per plot):
 #Background data (in grey) shows the frequencies of all TotRichness Values (regardless the Community)
