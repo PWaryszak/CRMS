@@ -41,7 +41,6 @@ theme_pw<-theme(axis.text.y=element_text(size=20),
                  legend.position = "bottom",
                  plot.title = element_text(lineheight=1.1, face="bold", size = 23, hjust = 0.5))
 
-
 MyCanvas<-ggplot(RichData, aes(x=Community, y=TotRichness, fill = Community, width=.75))
 MyCanvas
 Barplot<- MyCanvas + geom_bar(position=pd, stat="identity")+ geom_errorbar(aes(ymin=TotRichness-se, ymax=TotRichness+se),width=.4, position=pd)
@@ -53,14 +52,15 @@ Barplot3
 
 Richness.Barplot<-Barplot3+ggtitle("Species Richness in LA Coastal Communities (2007-2016)") +facet_grid(.~year)
 Richness.Barplot
+ggsave(filename = "RichnessBarplot.png", width = 10, height = 4, dpi = 300)#saves png in working directory
 
-ggsave(filename = "RichnessBarplot.png", width = 10, height = 4, dpi = 300)
 
-#Plot histogram of Richness with grey total background=========
+#Plot histogram of Richness with grey background of all TotRichness values=========
 #Source:https://drsimonj.svbtle.com/plotting-background-data-for-groups-with-ggplot2
 
 #Frequencies of Richness Values acros 4 Communities (per plot):
 #Background data (in grey) shows the frequencies of all TotRichness Values (regardless the Community)
+#Frequencies of Mean Richness Values acros 4 Comms:
 d<-veg[ ,c("year", "Community","TotRichness")]# Full data set needed
 d_bg <- data.frame(TotRichness = d[, "TotRichness"])  # Background Data needed
 
