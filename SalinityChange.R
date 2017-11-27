@@ -1,6 +1,8 @@
 #Load Data and libraries first===========
 #setwd("~/Pawel/CRMS")#Tulane Lab Comp
-library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
 
 env<-read.csv("CRMS_Soil.csv")
 str(env)#194840 obs. of  12 variables: 
@@ -13,119 +15,113 @@ table(env$year)#good sampling effort across years. Cut out year 2001 & 2006 to
 #fit veg data.
 range(env$SoilPorewaterSalinity.ppt)#0 3067
 
+#Having Salinity that is higher than 50 PPT is super unusual. 
+#20 PPT is the maximum recorded in the field in LA coast. Typos? possibly.
+env[which.max(env$SoilPorewaterSalinity.ppt),]#comment says 0.6 PPT, not sure why???
+
+#Remove anything with PPT > 50 (arbitrary choice of PPT threshold)
+Above50PPT<- subset( env, env$SoilPorewaterSalinity.ppt > 50 )
+dim(Above50PPT)#18 12 # there is 18 extraordinary values that need to be removed.
+table(Above50PPT$SoilPorewaterSalinity.ppt)#Number of PPT values above normal max (Outliers/Typos)
+#54.7   57   71  867 1307 1514 1564 1603 1819 1976 2280 2324 2363 2440 2479 2574 2639 3067 
+####1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1 
+env2<- subset (env, env$SoilPorewaterSalinity.ppt < 50 )
+dim(env)#194840 12 that is the original dataset of salinity
+dim(env2)#194822  12 orig - 18 records with PPT >50
 
 #MEAN +SD+ CV of Salinity per year per station(site)============
-#Salinity was measured in one location per Stations (site):
-Salinity<-summarise(group_by(env,StationFront,year), MeanSalinity=mean(SoilPorewaterSalinity.ppt),
+#Salinity was measured in one location per Stations (site), so each plot withing station (Site)
+#should be the same within one site in the same year:
+
+Salinity<-summarise(group_by(env2,StationFront,year), MeanSalinity=mean(SoilPorewaterSalinity.ppt),
                             SDSalinity=sd(SoilPorewaterSalinity.ppt),CVSalinity= SDSalinity/MeanSalinity)
 str(Salinity)#4227 obs. of  5 variables:
-head(Salinity)
 
-#GGPLOT of Salinity CHANGE across 10 years======== 
-levels(Salinity$StationFront)
-salt<-as.data.frame(Salinity)
-#subset 20 stations:
-s20<- salt[  salt$StationFront =="CRMS0002"|
-             salt$StationFront =="CRMS0086"|
-             salt$StationFront =="CRMS0065"|
-             salt$StationFront =="CRMS0061"|
-             salt$StationFront =="CRMS0035"|
-             salt$StationFront =="CRMS0038"|
-             salt$StationFront =="CRMS0039"|
-             salt$StationFront =="CRMS0089"|
-             salt$StationFront =="CRMS0004"|
-               salt$StationFront =="CRMS0003"|
-               salt$StationFront =="CRMS0290"|
-               salt$StationFront =="CRMS0260"|
-               salt$StationFront =="CRMS0097"|
-               salt$StationFront =="CRMS0117"|
-               salt$StationFront =="CRMS0171"|
-               salt$StationFront =="CRMS0575"|
-               salt$StationFront =="CRMS0567"|
-               salt$StationFront =="CRMS0574"|
-               salt$StationFront =="CRMS5167"|
-               salt$StationFront =="CRMS6302",]
+#CV=SD/Mean========
+# Measure of variability in salinity in each plot over time.
 
-head(s20)
-s20$year<-as.factor(s20$year)
-
-#GGPLOT change in Swamp Salinity in 2007-2016
-SaltPlot<-ggplot(s20, aes(x = year, y = MeanSalinity, group=StationFront, color=StationFront))  
-SaltPlot1 <- SaltPlot + geom_point() + geom_line()
-SaltPlot2<- SaltPlot1 + theme_classic() +ggtitle("Salinity Change on Lousiana Coast (2007-2016)")
-SaltPlot2
-
-#There are some problematic plots too:
-CRMS6302<- salt[salt$StationFront =="CRMS6302",]
-CRMS6302
-CRMS6302b<- env[env$StationFront =="CRMS6302",]
-CRMS6302b
-
-#CV=SD/Mean over time over communities========
-# Measureof variability in salinity in each plot over time.
-# a cut-off  plots < 5
 Salinity<-summarise(group_by(env,StationFront,year), MeanSalinity=mean(SoilPorewaterSalinity.ppt),
                     SDSalinity=sd(SoilPorewaterSalinity.ppt),CVSalinity= SDSalinity/MeanSalinity)
 str(Salinity)#4227 obs. of  5 variables:
 head(Salinity)
 
+# a Cut-off  threshold < 5 (arbitraty threshold to remove stations with too little measuerments over 10 years)
 CutOff<-summarise(Salinity, Cut = length(StationFront)) %>% filter(Cut > 5)
 range(CutOff$Cut)#6 13
-CutOff# A tibble: 388 × 2 = only 12 sites were underserveyed.
-
+dim(CutOff)## A tibble: 388 x 2
 Salinity2<- Salinity[ which(Salinity$StationFront %in%  CutOff$StationFront) , ]
+head(Salinity2)
 
-#Match Community types with Salinity=====
+
+#Match Salinity with Veg Data =====
 veg <- read.csv("CRMS_Marsh_Veg.csv")#From cleaned the CRMS_Marsh_Vegetation.csv to suit R.
 str(veg)#133612 obs. of  24 variables
 levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"
 veg$Community<-factor(veg$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
 
 #Let us define the community-type in each StationFront based on  n of Comms:
+#As community type switches based on veg change over time
+#For example If 9 years was categorized Freshwater and 1 year was intermiediate = > Freshwater
 StationComm<- group_by(veg,StationFront,Community ) %>% count(Count=StationFront)
-StationComm#It gives us count of communities per StationFront (862)
+StationComm#It gives us count of communities per StationFront (740)
 SCwide<- spread(StationComm, key = Community, value = n, fill = 0)#make it wide
 SCwide$WhichMax<-colnames(SCwide)[apply(SCwide,1,which.max)]#while wide we can see which Comm is predominant
-SCwide
+SCwide# A tibble: 320 x 7
 StationCommDefined<-SCwide[, c(1,7)]
 StationCommDefined
 colnames(StationCommDefined)[2] <- "Community" #Renaming WhichMAx back to Community
 
-#Looking at Community Switch in one random plot = CRMS0002_V54:
-#Subset only these 2007 station from entire data set to have a consistent set of plot across years:
-CRMS0002_V54  <- filter(t2, StationID == "CRMS0002_V54")
-CRMS0002_V54 #This plot would be classified as Brakish
-1   2007 CRMS0002_V54     Brackish     5
-2   2008 CRMS0002_V54     Brackish     4
-3   2009 CRMS0002_V54     Brackish     5
-4   2010 CRMS0002_V54     Brackish     7
-5   2011 CRMS0002_V54     Brackish     7
-6   2012 CRMS0002_V54     Brackish     6
-7   2013 CRMS0002_V54     Brackish     7
-8   2014 CRMS0002_V54     Brackish     7
-9   2015 CRMS0002_V54     Brackish     8
-10  2016 CRMS0002_V54 Intermediate     8
-
-
-#Matching Communities with Salinity Data by StationFront:
-SalinityCommunity<-left_join(Salinity, StationCommDefined, by = "StationFront")
+#Merging Communities with Salinity Data by StationFront
+SalinityCommunity<-left_join(Salinity2, StationCommDefined, by = "StationFront")
 SalinityCommunity<-as.data.frame(SalinityCommunity)
-str(SalinityCommunity)#4227 obs. of  6 variables:
+str(SalinityCommunity)#4204 obs. of  6 variables:
 
-#Compute mean CV(oef of variation = sd/mean) per year per Community:
+#Mean_CV(coef of variation = sd/mean) per year per Community:####
 cv<- group_by(SalinityCommunity, Community,year)
 cvSum<-summarise(cv, Mean_CV = mean(CVSalinity), SD_CV = sd(CVSalinity))
 cvSum$year<-as.factor(cvSum$year)
-cvSum2<-cvSum[! cvSum$year == 2001 & !cvSum==2006, ] #years we do not care about
+cvSum2<-cvSum[! cvSum$year == 2001 & !cvSum$year==2006 & !cvSum$year==2017, ] #years we do not care about, 2017 incomplete
 cvSum2$Community<-factor(cvSum2$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
 cvSum3<- cvSum2[! is.na(cvSum2$Community),]
 cvSum3
 #GGPLOT cvSum:
 cvPlot<-ggplot(cvSum3, aes(x = year, y = Mean_CV, group=Community, shape=Community))  
-cvPlot1 <- cvPlot + geom_point(size=4)
+cvPlot1 <- cvPlot + geom_point(size=4) +xlab("Year")
 cvPlot1
-cvPlot1 +geom_line() + theme_classic() +ggtitle("Mean Salinity CV Change in 4 Communities on Lousiana Coast (2007-2016)")
+cvPlot2<-cvPlot1 +geom_line() + theme_classic() +ggtitle("SD/Mean Salinity (CV) in 4 Communities\n on Lousiana Coast (2007-2016)")
+cvPlot2
+#My own theme for ggplotting (run first):
+theme_mine<-theme(axis.text.y=element_text(size=22),
+                 axis.title.y=element_text(size=24),
+                 axis.title.x=element_text(size=24),
+                 axis.text.x=element_text(size=22),
+                 panel.grid.minor.x = element_blank(),
+                 legend.position = "right",
+                 strip.text = element_text(size= 22),
+                 plot.title = element_text(lineheight=1.1, face="bold", size = 25,hjust = 0.5),
+                 legend.text = element_text(size = 18),
+                 legend.title = element_text(size = 18))
+cvPlot3<- cvPlot2+theme_mine
+cvPlot3
 
+
+#Mean_SD per year per Community:####
+sd<- group_by(SalinityCommunity, Community,year)
+sdSum<-summarise(sd, Mean_SD = mean(SDSalinity))
+sdSum$year<-as.factor(sdSum$year)
+sdSum2<-sdSum[! sdSum$year == 2001 & !sdSum$year==2006 & !sdSum$year==2017, ] #years we do not care about, 2017 incomplete
+sdSum2$Community<-factor(sdSum2$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))#re-arranging levels ac to salinity levels
+sdSum3<- sdSum2[! is.na(sdSum2$Community),]
+sdSum3
+#GGPLOT sdSum:
+#library(ggplot2)
+sdPlot<-ggplot(sdSum3, aes(x = year, y = Mean_SD, group=Community, shape=Community))  
+sdPlot1 <- sdPlot + geom_point(size=4)+xlab("Year")
+sdPlot1
+sdPlot2<-sdPlot1 +geom_line() + theme_classic() +ggtitle("Mean Salinity SD in 4 Communities\n on Lousiana Coast (2007-2016)")
+sdPlot2
+sdPlot3<-sdPlot2+theme_mine
+sdPlot3 #hye 2015 so weird?
 
 
 #Salinity change computations (2008 to 2014):============
