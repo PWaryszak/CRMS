@@ -5,12 +5,12 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(plotrix)
-library(vegan)
 library(nlme)
 library(chron)
 library(vegan)
 
-envc<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/CoastalMarsh/CRMS/Figures&Stats/CRMS_Continuous_Hydrographic.csv")  #warning!! takes a really long time to read in (I think it took hours)!!
+envc<-read.csv("CRMS_Continuous_Hydrographic.csv")#warning!! takes a really long time to read in
+#(I think it took hours)!!
 
 head(envc)
 #I want the column "Adjusted Water Elevation to Marsh (ft)". I am pretty convinced that this column works for both normal and flotant marshes. There is also a column Adjusted.Marsh.Mat.Elevation.to.Datum..ft. but if you subtract: adjusted water elevation to datum minus the adjusted marsh mat elevation to datum = adjusted water elevation to marsh. and this makes sense. Positive numbers are deep water, negative numbers are water below the surface of the marsh
@@ -32,12 +32,21 @@ unique(envc2[which(envc2$Sensor.Environment=="Flotant Marsh"),"Station.ID"])
 which(veg7$StationFront=="CRMS0058")
 
 #Notes: (weird things about the dataset)
-#Stationback = H01 and W01 and M01, H means surface water, W means it is from a well, M means it is from a flotant marsh. However, flotant marshes can have H, W, and M stationbacks. 
-#Only three stationfronts have M's (CRMS0115-M01, CRMS0128-M01, and CRMS0058-M01 and one of these (CRMS0058) has all NAs for water depth from the M plot) so I could just delete those, however we have veg data from CRMS0115 and CRMS0128 so it would be good to include if possible. incidentally CRMS0115 and CRMS0128 only have water depth measurements from the M plots, not the H or W plots, so I will just use those M plots. For CRMS0058, it doesn't matter much b/c we don't have veg data from that plot, and incidentally, it has H01 H02 and W01 plots that have very different water depth measurements
+#Stationback = H01 and W01 and M01,
+#H = surface water,
+#W = it is from a well,
+#M = from a flotant marsh.
+#However, flotant marshes can have H, W, and M stationbacks. 
+#Only three stationfronts have M's (CRMS0115-M01, CRMS0128-M01, and CRMS0058-M01
+#and one of these (CRMS0058) has all NAs for water depth from the M plot) 
+#so I could just delete those, however we have veg data from CRMS0115 and CRMS0128
+#so it would be good to include if possible.
+#incidentally CRMS0115 and CRMS0128 only have water depth measurements from the M plots, not the H or W plots, so I will just use those M plots. For CRMS0058, it doesn't matter much b/c we don't have veg data from that plot, and incidentally, it has H01 H02 and W01 plots that have very different water depth measurements
 # 74 stationfronts have W01 plots (wells). I checked a bunch of them and it looks like when there is a station with a well, the well was started in 2007 and ran though the early years e.g. 2007-2011, and then there are a few months of overlap but the well was discontinued and an H plot was started e.g. 2011-2017. In the period of overlap, however, the well and the H plots sometimes (but not always) give pretty different water depth numbers (-5 vs. 12cm). I could go either way, maybe right now I'll keep them b/c I don't like throwing away so much data.
 
 
-#Filter plots with missing data, calculate mean inundation over each day (if there are 2 H plots (H01 and H02) average them by day.
+#Filter plots with missing data, calculate mean inundation over each day
+#(if there are 2 H plots (H01 and H02) average them by day.
 #warning!! takes ~ 8 min to run
 envc3<-envc2%>%
   filter(is.na(waterdepthcm)==F)%>%
@@ -48,7 +57,8 @@ envc3<-envc2%>%
   summarise(waterdepthcm=mean(waterdepthcm,na.rm=T))
 
 
-#Then filter plots/years that at least have 1 measurement in each month (?) and calculate the annual average water depth and the proportion days flooded
+#Then filter plots/years that at least have 1 measurement in each month (?)
+#and calculate the annual average water depth and the proportion days flooded
 plotstokeep<-envc3%>%
   unite(StationFront.year,c("StationFront","year"),sep=".")%>%
   group_by(StationFront.year,month)%>%
