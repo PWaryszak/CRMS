@@ -1,5 +1,3 @@
-#Veg data
-
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -11,7 +9,9 @@ library(vegan)
 
 ##### Raw veg data #####
 #5 => 75 percent cover; 4 = 50-75 percent cover; 3 = 25-50 percent cover; 2 = 5-25 percent cover; 1 = numerous, but less than 5 percent cover, or scattered, with cover up to 5 percent; + = few, with small cover; and r = rare, solitary, with small cover.
-veg <- read.csv("CRMS_Marsh_Veg.csv")
+veg <- read.csv("CRMS_Marsh_Veg.csv")#Data contains cover values for each plant species. Source:
+#https://github.com/PWaryszak/CRMS/blob/master/CRMS_Marsh_Veg.csv
+
 levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"
 veg$Community<-factor(veg$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))
 
@@ -132,28 +132,7 @@ veg4$tot<-rowSums(veg4[,9:438])
 veg5<-veg4%>%
   select(StationID:Community.yr,Community,CoverTotal,richness:tot,Acerrubr:ZiziMill)
 
-
-#Then create a StationFront*year-level dataset
-#Summarize means across species/diversity by stationfront and year. there will be an NA for meanaccmmpery when there is veg data but no acc data
-veg6<-veg5%>%
-  group_by(StationFront,Community,year)%>%
-  summarise_at(vars(CoverTotal:ZiziMill),mean,na.rm=T)
-
-#then replace richness, shannon, and tot, if you want to recalculat them based on the new averaged stationfront-level species data (rather than have them be the average across the small plots)
-veg6$richness<-specnumber(veg6[,8:437])
-veg6$shannon<-diversity(veg6[,8:437],index="shannon")
-veg6$tot<-rowSums(veg6[,8:437])
-
-
-#Then create a StationFront-level dataset (average over years)
-veg7<-veg6%>%
-  group_by(StationFront,Community)%>%
-  summarise_at(vars(CoverTotal:ZiziMill),mean,na.rm=T)
-
-
-
-#veg only questions
-#Does phrag increase over time?
+#veg only questions = Does Phragaust increase over time?
 
 m1<-veg5%>%
   group_by(year,Community)%>%
@@ -163,6 +142,63 @@ ggplot(m1,aes(x=year,y=mean,color=Community))+
   geom_point()+
   geom_line(stat="smooth",method = "lm",size=.8)+
   facet_wrap(~Community,scale="free")
+
+#Then create a StationFront*year-level dataset
+#Summarize means across species/diversity by stationfront and year. 
+#there will be an NA for meanaccmmpery when there is veg data but no acc data
+#Pawel used the veg6 dataset for merging with envc4 and re-run RDA analysis=======
+#Jan 25, 2018:
+
+veg6<-veg5%>%
+  group_by(StationFront,Community,year)%>%
+  summarise_at(vars(CoverTotal:ZiziMill),mean,na.rm=T)
+
+#then replace richness, shannon, and tot, if you want to recalculate
+#them based on the new averaged stationfront-level species data
+#(rather than have them be the average across the small plots)
+veg6$richness<-specnumber(veg6[,8:437])
+veg6$shannon<-diversity(veg6[,8:437],index="shannon")
+veg6$tot<-rowSums(veg6[,8:437])
+
+
+#JOIN VEG6 with ENVC4 DATA=====
+#ENVC4 is an object produced in "HydrologicDataECF.R" file off raw CRMS environmental data.
+WaterData<-as.data.frame(envc4)#Creating data to merge with veg6
+str(WaterData)#2994 obs. of  14 variables:
+VegData<-as.data.frame(veg6)
+VegData$StationFront.year<-interaction(VegData$StationFront, VegData$year)
+
+str(VegData)#3090 obs. of  438 variables:
+#Join Veg Data with WaterData by StationFront.year
+#Some levels do not overlap:
+combined <- setdiff((VegData$StationFront.year), (WaterData$StationFront.year))
+combined
+
+combined2 <- setdiff( WaterData$StationFront.year,VegData$StationFront.year)
+combined2
+
+VegEnvData<-inner_join(VegData, WaterData, by="StationFront.year" )
+dim(VegEnvData)#2410 rows which is quite drop from 3090 
+#but we have data for each row which is a good news
+#write.csv(VegEnvData, file = "VegEnvData2018.csv", row.names = F)
+range(VegEnvData$Phraaust)#   0 100
+
+
+#Plot Salinity change over 10 years:======
+VegEnvData <- read.csv("VegEnvData2018.csv")
+#Plot showing decrease in Salinity over years over 4 communities:
+ggplot(VegEnvData,aes(x=year.x, y=MeanSalinity,color=Community))+
+  labs(x = "",y="",colour="Community type")+
+  geom_point()+
+  geom_line(stat="smooth",method = "lm",size=.8)+
+  facet_wrap(~Community,scale="free") +ggtitle("Mean Salinity Over Time")
+
+
+#Create a StationFront-level dataset (average over years)==========
+veg7<-veg6%>%
+  group_by(StationFront,Community)%>%
+  summarise_at(vars(CoverTotal:ZiziMill),mean,na.rm=T)
+
 
 
 
