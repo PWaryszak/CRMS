@@ -1,8 +1,102 @@
-#Produce veg data and matching env data for RDA ANALYSIS ==========
-# Load packages
+#New VegEnv data produced in 2018 in "VegECF.R" and "HydrologicDataECF.R" file
+#files were usingraw CRMS environmental data. ECF stands for Emily C. Farrer who
+#introduced changes and re-produced new cleaner data.
+#My name is Pawel Waryszak, email: pwaryszak@tulane.edu
+#Below I re-run the RDA analysis we have done in 2017 (as per below) with new vegEnvData:
+#2018 Re-run of RDA=======
 library(vegan)
 library(tidyverse)
+VegEnvData <- read.csv("VegEnvData2018.csv")#Data contains cover values for all plant species
+str(VegEnvData)#3090 obs. of  451 variables:
 
+#FRESHWATER RDA========
+freshOnly <- VegEnvData[ VegEnvData$Community=="Freshwater",]
+dim(freshOnly)#699 451
+sum(is.na(freshOnly$MeanSalinity)) #195 rows with na need removing
+sum(is.na(freshOnly$Phraaust)) #0 rows with NA - yay!
+FreshNArows<- is.na(freshOnly$MeanSalinity) #object = NA rows in freshOnly
+freshOnly_Cover <- freshOnly[ ! FreshNArows,]#remove NA rows
+dim(freshOnly_Cover)#504 451
+
+freshVeg_Cover<-freshOnly_Cover[,8:437] #Freshwater veg cover data only
+names(freshVeg_Cover)# from "Acerrubr" to "ZiziMill"
+freshVeg_0and1<-ifelse ( freshVeg_Cover == 0 , 0 , 1)##turning cover to presence/absence data
+
+freshEnv<-freshVeg_Cover [ , c(1:7,286, 438:451)] # Env data of Freshwater +"Phraust"
+dim(freshEnv)#504  22, colum 286 = "Phraaust"
+
+##BRAY Vegetation distance matrix construction [Cover Values]:
+?vegdist#The function computes dissimilarity indices
+BRAYfresh <- vegdist(freshVeg_Cover, distance = "bray")
+df.response1 <- decostand( BRAYfresh, method = 'hellinger' )#?decostand# standardization method  for community data
+fresh_rda <- rda(df.response1 ~ MeanSalinity + Phraaust, freshEnv)
+#ANOVA:
+Fresh_Anova_Cover<-anova.cca(fresh_rda, by = "margin")
+Fresh_Anova_Cover
+#STATS OUTPUT:
+#Model: rda(formula = df.response1 ~ MeanSalinity + Phraaust, data = freshEnv)
+##############Df  Variance       F Pr(>F)    
+#MeanSalinity   1 0.0002679 16.3952  0.001 ***
+#Phraaust       1 0.0001383  8.4615  0.001 ***
+#Residual     501 0.0081877  
+
+# Compute % Variance explained by RDA1 and RDA2 ==
+#== adj.r.squared * Cum. constr. eigenvalues prop. explained
+a <- summary(fresh_rda)
+a$concont$importance[2,1]#Cum. constr. eigenvalues prop. explained for RDA1
+a$concont$importance[3,2]#Cum. constr. eigenvalues prop. explained for RDA2
+#######################RDA1      RDA2
+#Cumulative Proportion 0.6610200 1.0000000
+R2 <- RsquareAdj(fresh_rda)$adj.r.squared # R2 of the variance explained
+R2#0.04338864
+
+#RDAs explained = Proportion explained *R2 *100%
+RDA1_fresh <- round(100 * RsquareAdj(fresh_rda)$adj.r.squared * summary(fresh_rda)$concont$importance[2,1], digits = 1)
+RDA1_fresh #2.9%
+RDA2_fresh <- round(100 * RsquareAdj(fresh_rda)$adj.r.squared * summary(fresh_rda)$concont$importance[3,2], digits = 1)
+RDA2_fresh #4.3%
+
+# PLOTS (quick ones to see)
+plot(fresh_rda, display=c("lc","cn"), main="Lousiana Freshwhater Communities")
+# GRAPHING Freshwater RDA with ggplot
+# Use the "scores" function, then use the elements of it, casting them to data frames, e.g.:
+df.sites <- as.data.frame( scores(fresh_rda)$sites )
+# The environment variables are in another element, e.g.: $CCA$biplot gives the biplot coords for the env variables 
+df.env <- as.data.frame( fresh_rda$CCA$biplot[, 1:2] )
+df.env$var <- rownames( fresh_rda$CCA$biplot )
+df.env$xOrg <- 0 #for plotting arrows
+df.env$yOrg <- 0 #for plotting arrows
+FreshPlot <- ggplot(data=df.sites, aes(x=RDA1, y=RDA2 ) ) +
+  xlab('RDA1 (2.9 % of variation)') + 
+  ylab('RDA2 (4.3 % of variation)') +
+  geom_hline(yintercept=0, colour="black", linetype="dotted" ) +
+  geom_vline(xintercept=0, colour="black", linetype="dotted" ) +
+  geom_segment(data=df.env, aes(x=xOrg, y=yOrg, xend=RDA1, yend=RDA2), size=3,
+               colour="red", arrow=arrow(length=unit(10,"point") ) ) + geom_point()+
+  annotate("text", x = 0.75, y = -0.48, label = c("Mean Salinity"), size=8, color="darkgreen") +
+  annotate("text", x = 0.3, y = 1.07, label = c("Phrag Cover"), size=8, color="darkblue") + theme_bw()
+FreshPlot+ theme(axis.text.x = element_text(size=22,hjust=.5,vjust=.5,face="plain"),
+                 axis.text.y = element_text(size=22,hjust=1,vjust=0,face="plain"),  
+                 axis.title.x = element_text(size=22,hjust=.5,vjust=0,face="plain"),
+                 axis.title.y = element_text(size=22),
+                 legend.title = element_text(size=22),
+                 plot.title = element_text(size=22, lineheight=1.8, face="bold", hjust = 0.5)) +ggtitle("Lousiana Freshwater Plant Communities")
+
+#ggsave('2018Freshwater_RDA_Plot.jpeg', dpi=300, height=5, width=8)
+
+##BRAY Vegetation distance matrix construction [Cover Values]:
+?vegdist#The function computes dissimilarity indices
+BRAYfresh <- vegdist(freshVeg, distance = "bray")
+df.response1 <- decostand( BRAYfresh, method = 'hellinger' )#?decostand# standardization method  for community data
+fresh_rda <- rda(df.response1 ~ MeanSalinity + Phraaust, freshEnv)
+#ANOVA:
+Fresh_Anova_Cover<-anova.cca(fresh_rda, by = "margin")
+Fresh_Anova_Cover
+
+
+
+#Produce veg data and matching env data for RDA ANALYSIS ==========
+#Done in 2017
 #Create veg matrices for each year:
 #Let us subset the plots (stationID) present in year 2007 from all data.
 #We also remove all records from Swamp station as they contain no records our target species Phragmites:
@@ -135,7 +229,7 @@ library(vegan);library(ggplot2);library(tidyr);library(dplyr);require(grid)
 ###where 0 means the two sites have the same composition (that is they share all the species), 
 ###and 1 means the two sites do not share any species
 #LOAD VEG DATA:
-vegdata<<- read.csv(url("https://sites.google.com/site/phragmitesproject/file-cabinet/VegDataAll.csv?attredirects=0"))
+vegdata <- read.csv(url("https://sites.google.com/site/phragmitesproject/file-cabinet/VegDataAll.csv?attredirects=0"))
 dim(vegdata) #to see how many rows and columns are there = 25580 rows by  404 cols
 #scanning for zero columns (singletons)
 occur.col<-apply(vegdata,2,sum)#function that compute sums per colums
@@ -253,7 +347,7 @@ anova.cca(fresh_rda, step=100)
 #Model       2 0.0000209 7.2384  0.001 *** ///  Residual 5388 0.0077784 
 
 
-# GRAPHING brackish RDA with ggplot2==========
+# GRAPHING Brackish RDA with ggplot2==========
 # Use the "scores" function, then use the elements of it, casting them to data frames, e.g.:
 df.sites <- as.data.frame( scores(brack_rda)$sites )
 
