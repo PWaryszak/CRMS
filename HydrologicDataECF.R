@@ -82,13 +82,14 @@ temp<-subset(envc4,StationFront.year=="CRMS0002.2008")
 sum(temp$flooded)/dim(temp)[1]
 #for CRMS0002.2008, the percent flooded should be 0.7672414, yes, checks
 
+#Create WaterData for merging with Veg data (VegECF.R)====
+head(as.data.frame(envc4))#2994    7
+WaterData<-as.data.frame(envc4)#Creating data to merge with veg6
+WaterData$StationFront.year<-interaction(WaterData$StationFront, WaterData$year)
+#write.csv(WaterData, file = "CRMS_MeanWaterDepth_Salinity_envc4.csv", row.names = FALSE)
 
-
-
-
-
-
-#Ignore all below, this is from checking the data and figuring out what M, H, and W plots were like
+#Ignore=====
+#all below, this is from checking the data and figuring out what M, H, and W plots were like
 # envc3<-envc2%>%
 #   filter(is.na(waterdepthcm)==F)%>%
 #   mutate(year=Date..mm.dd.yyyy.,StationFront=Station.ID)%>%
