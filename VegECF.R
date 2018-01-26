@@ -1,13 +1,12 @@
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+#LOAD Libraries and raw data=====
+library(tidyverse)
 library(plotrix)
 library(vegan)
 library(nlme)
 library(chron)
 library(vegan)
 
-##### Raw veg data #####
+##### Raw veg data:
 #5 => 75 percent cover; 4 = 50-75 percent cover; 3 = 25-50 percent cover; 2 = 5-25 percent cover; 1 = numerous, but less than 5 percent cover, or scattered, with cover up to 5 percent; + = few, with small cover; and r = rare, solitary, with small cover.
 veg <- read.csv("CRMS_Marsh_Veg.csv")#Data contains cover values for each plant species. Source:
 #https://github.com/PWaryszak/CRMS/blob/master/CRMS_Marsh_Veg.csv
@@ -159,39 +158,50 @@ veg6<-veg5%>%
 veg6$richness<-specnumber(veg6[,8:437])
 veg6$shannon<-diversity(veg6[,8:437],index="shannon")
 veg6$tot<-rowSums(veg6[,8:437])
-
+#write.csv(veg6, file = "CRMS_Veg2018.csv")
 
 #JOIN VEG6 with ENVC4 DATA=====
 #ENVC4 is an object produced in "HydrologicDataECF.R" file off raw CRMS environmental data.
-WaterData<-as.data.frame(envc4)#Creating data to merge with veg6
-str(WaterData)#2994 obs. of  14 variables:
-VegData<-as.data.frame(veg6)
-VegData$StationFront.year<-interaction(VegData$StationFront, VegData$year)
+WaterData<-as.data.frame(envc4)#Creating data to merge with veg6, or:
+WaterData <- read_csv("CRMS_MeanWaterDepth_Salinity_envc4.csv")
+dim(WaterData)#2994 obs. of  14 variables:
+WaterDataThin <- as.data.frame(select( WaterData, StationFront.year, meanwaterdepthcm, MeanSalinity,floodedpercent))
 
-str(VegData)#3090 obs. of  438 variables:
-#Join Veg Data with WaterData by StationFront.year
-#Some levels do not overlap:
-combined <- setdiff((VegData$StationFront.year), (WaterData$StationFront.year))
-combined
-
-combined2 <- setdiff( WaterData$StationFront.year,VegData$StationFront.year)
-combined2
-
-VegEnvData<-inner_join(VegData, WaterData, by="StationFront.year" )
+VegData<-as.data.frame(veg6)#veg6 is produced in above lines or as saved csv file:
+VegData<-read.csv("CRMS_Veg2018.csv")
+VegData$StationFront.year<-interaction(VegData$StationFront, VegData$year)#We need that for joining
+dim(VegData)#3090 obs. of  439 variables:
+VegDataThin <- as.data.frame(select( VegData,  - StationFront))#to ease joining with inner_join:
+                             
+#Join Veg Data with WaterData by StationFront.year, some levels of "StationFront.year" do not overlap:
+VegEnvData<-inner_join(VegDataThin,WaterDataThin , by="StationFront.year" )
 dim(VegEnvData)#2410 rows which is quite drop from 3090 
-#but we have data for each row which is a good news
 #write.csv(VegEnvData, file = "VegEnvData2018.csv", row.names = F)
-range(VegEnvData$Phraaust)#   0 100
 
 
 #Plot Salinity change over 10 years:======
 VegEnvData <- read.csv("VegEnvData2018.csv")
 #Plot showing decrease in Salinity over years over 4 communities:
-ggplot(VegEnvData,aes(x=year.x, y=MeanSalinity,color=Community))+
+ggplot(VegEnvData,aes(x=year, y=MeanSalinity,color=Community))+
   labs(x = "",y="",colour="Community type")+
   geom_point()+
   geom_line(stat="smooth",method = "lm",size=.8)+
   facet_wrap(~Community,scale="free") +ggtitle("Mean Salinity Over Time")
+
+#Plot meanwaterdepthcm change over 10 years====
+ggplot(VegEnvData,aes(x=year, y=meanwaterdepthcm,color=Community))+
+  labs(x = "",y="",colour="Community type")+
+  geom_point()+
+  geom_line(stat="smooth",method = "lm",size=.8)+
+  facet_wrap(~Community,scale="free") +ggtitle("Mean Water Depth (cm) Over Time on LA Coast")
+
+#Plot % of Flooed days change over 10 years====
+ggplot(VegEnvData,aes(x=year, y=floodedpercent*100,color=Community))+
+  labs(x = "Year",y="Days Flooded (%) Annually")+
+  geom_point()+
+  geom_line(stat="smooth",method = "lm",size=.8)+
+  facet_wrap(~Community,scale="free") +ggtitle("Mean Number of Flooded Days (%) Over Time on LA Coast")
+
 
 
 #Create a StationFront-level dataset (average over years)==========
