@@ -178,7 +178,6 @@ VegEnvData<-inner_join(VegDataThin,WaterDataThin , by="StationFront.year" )
 dim(VegEnvData)#2410 rows which is quite drop from 3090 
 #write.csv(VegEnvData, file = "VegEnvData2018.csv", row.names = F)
 
-
 #Plot Salinity change over 10 years:======
 VegEnvData <- read.csv("VegEnvData2018.csv")
 #Plot showing decrease in Salinity over years over 4 communities:
