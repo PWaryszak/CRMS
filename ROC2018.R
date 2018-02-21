@@ -2,10 +2,16 @@
 #New data was produced by Emily (efarrer@tulane.edu) in Jan 2018 as shown in 2 following files:
 #"HydrologicDataECF.R" and VegECF.R"
 #then...
+<<<<<<< HEAD
 #Pawel (pwaryszak@tulane.edu) JOINED VEG6 with ENVC4 data objects as per below:
 #ENVC4 is an object produced in "HydrologicDataECF.R" file off raw CRMS environmental data.
 library(tidyverse)
 library(vegan)
+=======
+
+#Pawel (pwaryszak@tulane.edu) JOINED VEG6 with ENVC4 data objects as per below:
+#ENVC4 is an object produced in "HydrologicDataECF.R" file off raw CRMS environmental data.
+>>>>>>> 92d52ee95dc36efac39cb0048cc77ebdc4b2ac69
 #WaterData<-as.data.frame(envc4)#Creating data to merge with veg6, or:
 WaterData <- read_csv("CRMS_MeanWaterDepth_Salinity_envc4.csv")
 dim(WaterData)#2994 obs. of  14 variables:
@@ -19,6 +25,11 @@ dim(VegData)#3090 obs. of  439 variables:
 
 #Join VegData with WaterData
 #by StationFront.year, some levels of "StationFront.year" do not overlap:
+<<<<<<< HEAD
+=======
+library(tidyverse)
+library(vegan)
+>>>>>>> 92d52ee95dc36efac39cb0048cc77ebdc4b2ac69
 VegEnvData<-inner_join(VegData,WaterDataThin , by="StationFront.year" )
 dim(VegEnvData)# 2410  442
 #write.csv(VegEnvData, file = "VegEnvDataNew2018.csv", row.names = F)
@@ -124,3 +135,18 @@ sum(is.na(v9$WaterTableChange))#64 NA-s
 sum(is.na(v9$SalinityROC))#76 NA-s
 sum(is.na(v9$'2016'))#76 NA-s
 314-76 # = 238 data-full site stations.
+<<<<<<< HEAD
+=======
+
+#RANGE of water salinity per community:=======
+VegEnvData <- read.csv("VegEnvDataNew2018.csv")#Data contains cover values for all plant species
+#Phrag is most present in Intermiediate communities, with the widest salinity range:
+PhragSalt<- group_by(VegEnvData, Community, na.rm = T)%>%
+  summarize(SalinityMin = min(MeanSalinity,na.rm = T), SalinityMax = max(MeanSalinity,na.rm = TRUE))
+PhragSalt #HUGE RANGE!!!
+#Community    na.rm SalinityMin SalinityMax
+# Brackish     T          0.243        30.5 
+# Freshwater   T          0.0563        4.21
+# Intermediate T          0.171        30.7 
+# Saline       T          1.01         26.6 
+>>>>>>> 92d52ee95dc36efac39cb0048cc77ebdc4b2ac69
