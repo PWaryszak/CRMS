@@ -11,6 +11,7 @@ library(vegan)
 
 envc<-read.csv("CRMS_Continuous_Hydrographic.csv")#warning!! takes a really long time to read in
 #(I think it took hours)!!
+dim(envc) # 38.875.701 rows of data and  44 variables
 
 head(envc)
 #I want the column "Adjusted Water Elevation to Marsh (ft)". I am pretty convinced that this column works for both normal and flotant marshes. There is also a column Adjusted.Marsh.Mat.Elevation.to.Datum..ft. but if you subtract: adjusted water elevation to datum minus the adjusted marsh mat elevation to datum = adjusted water elevation to marsh. and this makes sense. Positive numbers are deep water, negative numbers are water below the surface of the marsh
