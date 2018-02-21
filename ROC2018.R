@@ -6,7 +6,6 @@
 #ENVC4 is an object produced in "HydrologicDataECF.R" file off raw CRMS environmental data.
 library(tidyverse)
 library(vegan)
-
 #WaterData<-as.data.frame(envc4)#Creating data to merge with veg6, or:
 WaterData <- read_csv("CRMS_MeanWaterDepth_Salinity_envc4.csv")
 dim(WaterData)#2994 obs. of  14 variables:
@@ -125,28 +124,3 @@ sum(is.na(v9$WaterTableChange))#64 NA-s
 sum(is.na(v9$SalinityROC))#76 NA-s
 sum(is.na(v9$'2016'))#76 NA-s
 314-76 # = 238 data-full site stations.
-
-#Min & Max in salinity per community:=======
-VegEnvData <- read.csv("VegEnvDataNew2018.csv")#Data contains cover values for all plant species
-#Phrag is most present in Intermiediate communities, with the widest salinity range:
-PhragSalt<- group_by(VegEnvData, Community, na.rm = T)%>%
-  summarize(SalinityMin = min(MeanSalinity,na.rm = T), SalinityMax = max(MeanSalinity,na.rm = TRUE))
-PhragSalt #HUGE RANGE!!!
-#Community    na.rm SalinityMin SalinityMax
-# Brackish     T          0.243        30.5 
-# Freshwater   T          0.0563        4.21
-# Intermediate T          0.171        30.7 
-# Saline       T          1.01         26.6 
-
-
-#Min & Max in water table level per community:=======
-VegEnvData <- read.csv("VegEnvDataNew2018.csv")#Data contains cover values for all plant species
-#Phrag is most present in Intermiediate communities, with the widest salinity range:
-PhragTable<- group_by(VegEnvData, Community, na.rm = T)%>%
-  summarize(TableMin = min(meanwaterdepthcm,na.rm = T), TableMax = max(meanwaterdepthcm,na.rm = TRUE))
-PhragTable #HUGE RANGE!!!
-Community    na.rm TableMin TableMax
-#1 Brackish     T        -28.6     29.1
-#2 Freshwater   T        -32.9     55.9
-#3 Intermediate T        -37.2     35.2
-#4 Saline       T        -32.8     21.6

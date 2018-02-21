@@ -1,6 +1,4 @@
-
 ##### Continuous bulk hydrologic data from CRMS ####
-
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -11,6 +9,7 @@ library(vegan)
 
 envc<-read.csv("CRMS_Continuous_Hydrographic.csv")#warning!! takes a really long time to read in
 #(I think it took hours)!!
+dim(envc) # 38.875.701 rows of data and  44 variables
 
 head(envc)
 #I want the column "Adjusted Water Elevation to Marsh (ft)". I am pretty convinced that this
