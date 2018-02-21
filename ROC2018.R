@@ -2,34 +2,10 @@
 #New data was produced by Emily (efarrer@tulane.edu) in Jan 2018 as shown in 2 following files:
 #"HydrologicDataECF.R" and VegECF.R"
 #then...
-<<<<<<< HEAD
 #Pawel (pwaryszak@tulane.edu) JOINED VEG6 with ENVC4 data objects as per below:
 #ENVC4 is an object produced in "HydrologicDataECF.R" file off raw CRMS environmental data.
 library(tidyverse)
 library(vegan)
-=======
-
-#Pawel (pwaryszak@tulane.edu) JOINED VEG6 with ENVC4 data objects as per below:
-#ENVC4 is an object produced in "HydrologicDataECF.R" file off raw CRMS environmental data.
->>>>>>> 92d52ee95dc36efac39cb0048cc77ebdc4b2ac69
-#WaterData<-as.data.frame(envc4)#Creating data to merge with veg6, or:
-WaterData <- read_csv("CRMS_MeanWaterDepth_Salinity_envc4.csv")
-dim(WaterData)#2994 obs. of  14 variables:
-WaterDataThin <- as.data.frame(select( WaterData, StationFront.year, meanwaterdepthcm, MeanSalinity,floodedpercent))
-
-#Veg6 is an object produced in "VegECF.R":
-VegData<-as.data.frame(veg6)#veg6 is produced in above lines or as saved csv file:
-VegData<-read.csv("CRMS_Veg2018.csv")
-VegData$StationFront.year<-interaction(VegData$StationFront, VegData$year)#We need that for joining
-dim(VegData)#3090 obs. of  439 variables:
-
-#Join VegData with WaterData
-#by StationFront.year, some levels of "StationFront.year" do not overlap:
-<<<<<<< HEAD
-=======
-library(tidyverse)
-library(vegan)
->>>>>>> 92d52ee95dc36efac39cb0048cc77ebdc4b2ac69
 VegEnvData<-inner_join(VegData,WaterDataThin , by="StationFront.year" )
 dim(VegEnvData)# 2410  442
 #write.csv(VegEnvData, file = "VegEnvDataNew2018.csv", row.names = F)
@@ -135,10 +111,8 @@ sum(is.na(v9$WaterTableChange))#64 NA-s
 sum(is.na(v9$SalinityROC))#76 NA-s
 sum(is.na(v9$'2016'))#76 NA-s
 314-76 # = 238 data-full site stations.
-<<<<<<< HEAD
-=======
 
-#RANGE of water salinity per community:=======
+#Salinity and Water Table oscilation per community=========
 VegEnvData <- read.csv("VegEnvDataNew2018.csv")#Data contains cover values for all plant species
 #Phrag is most present in Intermiediate communities, with the widest salinity range:
 PhragSalt<- group_by(VegEnvData, Community, na.rm = T)%>%
@@ -149,4 +123,15 @@ PhragSalt #HUGE RANGE!!!
 # Freshwater   T          0.0563        4.21
 # Intermediate T          0.171        30.7 
 # Saline       T          1.01         26.6 
->>>>>>> 92d52ee95dc36efac39cb0048cc77ebdc4b2ac69
+
+#Min & Max in water table level per community:=======
+VegEnvData <- read.csv("VegEnvDataNew2018.csv")#Data contains cover values for all plant species
+#Phrag is most present in Intermiediate communities, with the widest salinity range:
+PhragTable<- group_by(VegEnvData, Community, na.rm = T)%>%
+  summarize(TableMin = min(meanwaterdepthcm,na.rm = T), TableMax = max(meanwaterdepthcm,na.rm = TRUE))
+PhragTable #HUGE RANGE!!!
+Community    na.rm TableMin TableMax
+#1 Brackish     T        -28.6     29.1
+#2 Freshwater   T        -32.9     55.9
+#3 Intermediate T        -37.2     35.2
+#4 Saline       T        -32.8     21.6
