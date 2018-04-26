@@ -31,6 +31,11 @@ table(ifelse(freshEnv$Phraaust == 0, "No","Yes"))
 #No  Yes 
 #470 34
 #34/504*100 = 6.7% of plots contain Phraaust
+Freshwater1 <- lm (Phraaust ~ MeanSalinity, data = freshEnv)
+Freshwater2 <- lm (richness ~ MeanSalinity, data = freshEnv)
+Freshwater3 <- lm (richness ~ Phraaust, data = freshEnv)
+Freshwater4 <- lm (CoverTotal ~ richness, data = freshEnv)
+Freshwater5 <- lm (CoverTotal ~ Phraaust, data = freshEnv)
 
 # Plot path diagram:
 semPaths(Freshwater1 + Freshwater2 + Freshwater3 + Freshwater4 +
@@ -43,6 +48,8 @@ title("Freshwater Community Path Analysis (CRMS, 2007-2016)", line = 3)
 
 #Practice Path analysis ##########
 #Source: http://lavaan.ugent.be/tutorial/index.html
+library("lavaan")
+library("semPlot")
 
 # A silly dataset:
 A <- rnorm(100)
