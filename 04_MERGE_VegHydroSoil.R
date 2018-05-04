@@ -7,7 +7,10 @@ library(chron)
 
 ##### Raw veg data:
 #5 => 75 percent cover; 4 = 50-75 percent cover; 3 = 25-50 percent cover; 2 = 5-25 percent cover; 1 = numerous, but less than 5 percent cover, or scattered, with cover up to 5 percent; + = few, with small cover; and r = rare, solitary, with small cover.
+<<<<<<< HEAD
 #"CRMS_Marsh_Veg.csv" file = clean CRMS veg data as produced in "01_CLEAN_CRMS_Veg.R" file
+=======
+>>>>>>> 5993733dc7d02a5734a78d3264ba1df8698d2932
 veg <- read.csv("CRMS_Marsh_Veg.csv")#Data contains cover values for each plant species. Source:
 levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"
 veg$Community<-factor(veg$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))
@@ -154,8 +157,13 @@ ggplot(salinitySum, aes(x=as.factor(year), y=MeanWaterSalinity, shape=Community,
   ggtitle("Water salinity over 2007 - 2017 (Louisiana)") +
   theme_bw() +theme(legend.position = "none",
                     axis.text.x  = element_text(angle = 90),
+<<<<<<< HEAD
                     strip.text   = element_text(size = 14),
                     plot.title   = element_text(hjust= 0.5, size =16))
+=======
+                    strip.text = element_text(size = 14),
+                    plot.title = element_text(hjust= 0.5, size =16))
+>>>>>>> 5993733dc7d02a5734a78d3264ba1df8698d2932
 #ggsave(dpi=600, width = 7, height = 5, filename = "Rplot_CRMS_WaterSalinity.png")
 
 #Plot Richness over time over 4 comms:====
@@ -169,7 +177,11 @@ ggplot(RichnessSum, aes(x=as.factor(year), y=richness, shape=Community)) +
   geom_errorbar(aes(ymin=richness-ci,
                     ymax=richness+ci), width=.35, size=.9)+
   geom_point(position=position_dodge(.1),size=4) +
+<<<<<<< HEAD
   labs(x = "Year", y="Richness",colour="Salinity (ppt)") + 
+=======
+  labs(x = "Year",y="Salinity (ppt)",colour="Salinity (ppt)") + 
+>>>>>>> 5993733dc7d02a5734a78d3264ba1df8698d2932
   facet_grid(.~Community,scale="fixed") +
   ggtitle("Plant species richness over 2007 - 2017 (Louisiana)") +
   theme_bw() +theme(legend.position = "none",
@@ -195,7 +207,11 @@ ggplot(VegAllEnvData,aes(x=as.factor(year), y=meanwaterdepthcm, group=Community,
 
 #Plot Mean_SoilSalinity  over 10 years====
 ggplot(VegAllEnvData,aes(x=as.factor(year), y=Mean_SoilSalinity, group=Community, color = Community))+
+<<<<<<< HEAD
   labs(x = "",y="Soil Salinity (ppt)")+
+=======
+  labs(x = "",y="Water depth (cm)")+
+>>>>>>> 5993733dc7d02a5734a78d3264ba1df8698d2932
   geom_point(alpha = 0.2) + geom_smooth(method = "lm") +
   #geom_line(stat="smooth",method = "lm",size=.8)+
   facet_grid(~Community) +
