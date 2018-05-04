@@ -79,21 +79,34 @@ plotstokeep <- envc3 %>%
 
 
 #I should probably add SD and CV of water depth
+#I should probably add SD and CV of water depth
 envc4 <- envc3 %>%
   #unite(StationFront.year, StationFront, year,remove=F ) %>%
   #mutate (StationFront.year = interaction (StationFront,year)) %>%
   filter (StationFront.year %in% as.factor(plotstokeep$StationFront.year)) %>%
   mutate (flooded=ifelse(waterdepthcm > 0,1,0)) %>%   #sign(waterdepthcm)
   group_by (StationFront.year) %>%
-  summarise ( meanwaterdepthcm  = mean(waterdepthcm,na.rm=T),
-              floodeddays       = sum(flooded),
-              MeanWaterSalinity = mean(MeanSalinity, na.rm=T),  #Adjusted Salinity (ppt)
+  summarise ( meanwaterdepthcm  = mean(waterdepthcm, na.rm=T) ,
+              N = n() ,
+              meanwaterdepthcm_SD   = sd (waterdepthcm) ,
+              meanwaterdepthcm_SE   = meanwaterdepthcm_SD/sqrt(N)  ,
+              waterdepthcm_MAX  = max (waterdepthcm, na.rm=T),
+              waterdepthcm_MIN  = min (waterdepthcm, na.rm=T),
+              
+              floodeddays           = sum (flooded,na.rm=T)    ,
+              
+              MeanWaterSalinity     = mean (MeanSalinity, na.rm=T)    ,  #Adjusted Water Salinity (ppt)
+              MeanWaterSalinity_SD  = sd   (MeanSalinity, na.rm=T)  ,
+              MeanWaterSalinity_SE  = MeanWaterSalinity_SD/sqrt(N)   ,
+              MeanWaterSalinity_MAX = max  (MeanSalinity, na.rm=T) ,
+              MeanWaterSalinity_MIN = min  (MeanSalinity, na.rm=T) ,
+              
               n=n()) %>%
-  mutate (floodedpercent=floodeddays/n)
+  mutate (floodedpercent=floodeddays/n) 
 
-head (as.data.frame(envc3))
 str(envc4)#'data.frame':	3374 obs. of  6 variables:
 
+#Check Point:
 temp<-subset(envc4,StationFront.year=="CRMS0002.2008")
 sum(temp$floodedpercent)/dim(temp)[1]
 #for CRMS0002.2008, the percent flooded should be 0.7672414, yes, checks
@@ -103,6 +116,13 @@ str(as.data.frame(envc4))  #3374 obs. of  6 variables:
 WaterData<-as.data.frame(envc4)  #Creating data to merge with veg6
 #write.csv(WaterData, file = "CRMS_MeanWaterDepth_envc4.csv", row.names = FALSE)
 
+#Plot waterdepthcm_MAX====
+envc4 <- read.csv(file = "CRMS_MeanWaterDepth_envc4.csv")#Load data from saved file or run above script (takes hours)
+envc4.year <- separate(envc4, col = StationFront.year, into = c("Station","year"))
+str(envc4.year)#3374 obs. of  16 variables:
+ggplot(data=envc4.year, aes(waterdepthcm_MAX, x = as.factor(year))) +
+  geom_boxplot() + theme_classic() +
+  ggtitle("Distribution of maximum water depths (cm)")
 
 
 
