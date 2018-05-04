@@ -1,6 +1,4 @@
 ##### Continuous bulk hydrologic data from CRMS ####
-library(plotrix)
-library(nlme)
 library(chron)
 library(vegan)
 library(tidyverse)
