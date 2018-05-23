@@ -1,0 +1,34 @@
+---
+title: "CRMS_Tables"
+author: "Pawel Waryszak"
+date: "23 May 2018"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Table 1
+
+Number of stations with vegetation and soil porewater data per year per marsh type used in the analysis. Total number of plots per marsh community and years across all marsh types are shown.
+
+Table was created using the data frame produced on 03may2018, available on website [here](
+https://sites.google.com/site/phragmitesproject/file-cabinet/VegAllEnvData_03may2018.csv?attredirects=0)
+
+```{r, echo=FALSE, message=FALSE}
+#Summary Table 1:  plots per year that were analyzed:
+
+library(tidyverse)
+library (knitr)
+
+VegAllEnvData <- read.csv("VegAllEnvData_03may2018.csv")#setwd("~/Desktop/CRMS/CRMS")
+
+MyTable1 <- group_by(VegAllEnvData, year, Community) %>%
+  summarise(n()) %>% spread(Community, `n()` ) %>%
+  mutate (Total = Brackish + Freshwater+ Intermediate + Saline)
+
+kable(MyTable1)
+
+```
+
