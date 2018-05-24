@@ -6,7 +6,7 @@ library(vegan)
 VegAllEnvData = read.csv("VegAllEnvData_03may2018.csv")
 VegAllEnvData$Community <- factor(VegAllEnvData$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))
 
-#RDA FRESHWATER ~ Mean_SoilSalinity======
+#"FRESHWATER" RDA  ~ Mean_SoilSalinity======
 freshOnly <- VegAllEnvData[ VegAllEnvData$Community=="Freshwater",]
 dim(freshOnly)#now: 603 465
 sum(is.na(freshOnly$MeanWaterSalinity)) #42 rows with NA-s that need removing
@@ -44,11 +44,12 @@ Fresh_Anova_Cover_soil_year#Df  Variance      F Pr(>F)
 ############################Mean_SoilSalinity   1 0.0003767 11.3217  0.001 ***
 ############################Phraaust            1 0.0001401  4.2101  0.003 ** 
 ############################year                1 0.0000757  2.2739  0.03
+
 #PLOT:
 plot(Freshwater_rda , display=c("lc","cn"), main="Lousiana Freshwhater Communities")
 Freshwater.summary <- summary(Freshwater_rda)
 Freshwater.summary$concont$importance[2,1]#Cum. constr. eigenvalues prop. explained for RDA1
-Freshwater.summary$concont$importance[3,2]#Cum. constr. eigenvalues prop. explained for RDA2
+Freshwater.summary$concont$importance[2,2]#Cum. constr. eigenvalues prop. explained for RDA2
 
 #######################RDA1      RDA2
 #Cumulative Proportion 0.6610200 1.0000000
@@ -58,15 +59,15 @@ R2#0.04
 #RDAs explained = Proportion explained *R2 *100%
 RDA1_Freshwater <- round(100 * RsquareAdj(Freshwater_rda)$adj.r.squared * summary(Freshwater_rda)$concont$importance[2,1], digits = 1)
 RDA1_Freshwater 
-RDA2_Freshwater <- round(100 * RsquareAdj(Freshwater_rda)$adj.r.squared * summary(Freshwater_rda)$concont$importance[3,2], digits = 1)
+RDA2_Freshwater <- round(100 * RsquareAdj(Freshwater_rda)$adj.r.squared * summary(Freshwater_rda)$concont$importance[2,2], digits = 1)
 RDA2_Freshwater 
 
-# PLOTS (quick ones to see)
+# PLOTS (quick ones to see):
 plot(Freshwater_rda, display=c("lc","cn"), main="Lousiana Freshwater Communities")
 # GRAPHING Freshwater water RDA with ggplot
-# Use the "scores" function, then use the elements of it, casting them to data frames, e.g.:
+# Use the "scores" function, for casting the scores to data frames:
 df.sites <- as.data.frame( scores(Freshwater_rda)$sites )
-# The environment variables are in another element, e.g.: $CCA$biplot gives the biplot coords for the env variables 
+# The environment variables are in: $CCA$biplot = gives the biplot coordinatess for the env variables 
 df.env <- as.data.frame( Freshwater_rda$CCA$biplot[, 1:2] )
 df.env$var <- rownames( Freshwater_rda$CCA$biplot )
 df.env$xOrg <- 0 #for plotting arrows
@@ -90,6 +91,7 @@ FreshwaterPlot <- ggplot(data=df.sites, aes(x=RDA1, y=RDA2 ) ) +
   ggtitle("Freshwater Plant Communities (2007 - 2017, LA)")
 
 FreshwaterPlot
+#ggsave('RDA_Plot_2018Freshwater.jpeg', dpi=300, height=5, width=9)
 
 #"Intermediate" RDA ~ Mean_SoilSalinity========
 VegEnvData <- read.csv("VegAllEnvData_03may2018.csv")
@@ -131,7 +133,7 @@ R2#0.1111971
 #RDAs explained = Proportion explained *R2 *100%
 RDA1_Intermediate <- round(100 * RsquareAdj(Intermediate_rda)$adj.r.squared * summary(Intermediate_rda)$concont$importance[2,1], digits = 1)
 RDA1_Intermediate #11.8 %
-RDA2_Intermediate <- round(100 * RsquareAdj(Intermediate_rda)$adj.r.squared * summary(Intermediate_rda)$concont$importance[3,2], digits = 1)
+RDA2_Intermediate <- round(100 * RsquareAdj(Intermediate_rda)$adj.r.squared * summary(Intermediate_rda)$concont$importance[2,2], digits = 1)
 RDA2_Intermediate # 11.1%
 
 # PLOTS (quick ones to see)
@@ -162,7 +164,7 @@ IntermediatePlot <- ggplot(data=df.sites, aes(x=RDA1, y=RDA2 ) ) +
                         plot.title = element_text(size=22, lineheight=1.8, face="bold", hjust = 0.5)) +
   ggtitle("Intermediate Plant Communities (2007 - 2017, LA)")
 IntermediatePlot
-#ggsave('2018Intermediatewater_RDA_Plot2.jpeg', dpi=300, height=5, width=9)
+#ggsave('RDA_Plot_2018Intermediate.jpeg', dpi=300, height=5, width=9)
 
 
 
@@ -206,7 +208,7 @@ R2#0.04
 #RDAs explained = Proportion explained *R2 *100%
 RDA1_Brackish <- round(100 * RsquareAdj(Brackish_rda)$adj.r.squared * summary(Brackish_rda)$concont$importance[2,1], digits = 1)
 RDA1_Brackish 
-RDA2_Brackish <- round(100 * RsquareAdj(Brackish_rda)$adj.r.squared * summary(Brackish_rda)$concont$importance[3,2], digits = 1)
+RDA2_Brackish <- round(100 * RsquareAdj(Brackish_rda)$adj.r.squared * summary(Brackish_rda)$concont$importance[2,2], digits = 1)
 RDA2_Brackish 
 
 # PLOTS (quick ones to see)
@@ -238,11 +240,7 @@ BrackishPlot <- ggplot(data=df.sites, aes(x=RDA1, y=RDA2 ) ) +
   ggtitle("Brackish Plant Communities (2007 - 2017, LA)")
 
 BrackishPlot
-#ggsave('2018Brackishwater, dpi=300, height=5, width=9)
-
-
-
-
+#ggsave('RDA_Plot_2018Brackish.jpeg', dpi=300, height=5, width=9)
 
 #"Saline" RDA ~ Mean_SoilSalinity========
 VegEnvData <- read.csv("VegAllEnvData_03may2018.csv")
@@ -283,7 +281,7 @@ R2#0.04
 #RDAs explained = Proportion explained *R2 *100%
 RDA1_Saline <- round(100 * RsquareAdj(Saline_rda)$adj.r.squared * summary(Saline_rda)$concont$importance[2,1], digits = 1)
 RDA1_Saline 
-RDA2_Saline <- round(100 * RsquareAdj(Saline_rda)$adj.r.squared * summary(Saline_rda)$concont$importance[3,2], digits = 1)
+RDA2_Saline <- round(100 * RsquareAdj(Saline_rda)$adj.r.squared * summary(Saline_rda)$concont$importance[2,2], digits = 1)
 RDA2_Saline 
 
 # PLOTS (quick ones to see)
@@ -315,7 +313,7 @@ SalinePlot <- ggplot(data=df.sites, aes(x=RDA1, y=RDA2 ) ) +
   ggtitle("Saline Plant Communities (2007 - 2017, LA)")
 
 SalinePlot
-#ggsave('2018Salinewater, dpi=300, height=5, width=9)
+ggsave('RDA_Plot_2018Saline.jpeg', dpi=300, height=5, width=9)
 
 
 
