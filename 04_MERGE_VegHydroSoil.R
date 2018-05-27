@@ -207,7 +207,7 @@ ggplot(VegAllEnvData,aes(x=as.factor(year), y=Mean_SoilSalinity, group=Community
 
 #ggsave(dpi=600, width = 7, height = 5, filename = "Rplot_CRMS_SoilSalinity.png")
 
-#Plot % of Flooed days change over 10 years====
+#Plot % of Flooded days change over 10 years====
 ggplot(VegAllEnvData,aes(x=as.factor(year), y=floodedpercent*100, group=Community, color = Community))+
   labs(x = "",y="Days flooded (%)")+
   geom_point(alpha = 0.2) + geom_smooth(method = "lm") +
@@ -221,12 +221,87 @@ ggplot(VegAllEnvData,aes(x=as.factor(year), y=floodedpercent*100, group=Communit
 
 #ggsave(dpi=600, width = 7, height = 5, filename = "Rplot_CRMS_Flooded.png")
 
+#Plot % Phragmites Cover change over 10 years====
+VegAllEnvData <- read.csv("VegAllEnvData_03may2018.csv")
+VegAllEnvData$Year <- paste0("Year_", VegAllEnvData$year)
+
+VegAllEnvData$Community<-factor(VegAllEnvData$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))
+ggplot(VegAllEnvData, aes(x = as.factor(year), y = Phraaust, group = Community, color = Community))+
+  labs(x = "Year",y="Phragmites cover (%) annually")+
+  geom_point()+
+  geom_smooth(method = "lm") +
+  #geom_line(stat="smooth",method = "lm", size=.8, na.rm = T) 
+  #scale_y_continuous(breaks=c(2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017))+
+  facet_wrap(~Community,scale="free")+
+  ggtitle("Phragmites cover change over 2007 - 2017 (Louisiana)") +
+  theme_bw() +theme(legend.position = "none",
+                    axis.text.x  = element_text(angle = 90),
+                    strip.text = element_text(size = 14),
+                    plot.title = element_text(hjust= 0.5, size =16))
+
+
+#PUT Model info on a plot ======
+#Source: https://sejohnston.com/2012/08/09/a-quick-and-easy-function-to-plot-lm-results-in-r/
+ggplotRegression <- function (fit) {
+  
+  require(ggplot2)
+  
+  ggplot(fit$model, aes_string(x = names(fit$model)[2], y = names(fit$model)[1],group = names(fit$model)[1])) + 
+    geom_point() +
+    stat_smooth(method = "lm", col = "red") +
+    labs(title = paste("Adj R2 = ",signif(summary(fit)$adj.r.squared, 5),
+                       "Intercept =",signif(fit$coef[[1]],5 ),
+                       " Slope =",signif(fit$coef[[2]], 5),
+                       " P =",signif(summary(fit)$coef[2,4], 5)))
+}
+
+ggplotRegression(lm(Phraaust ~ Year,
+                             data = VegAllEnvData[VegAllEnvData$Community=="Freshwater",]))+
+  theme_bw() + 
+  labs(subtitle = "Freshwater")+
+  theme(legend.position = "none",
+                       axis.text.x   = element_text(angle = 90),
+                       plot.subtitle =  element_text(size = 14),
+                       plot.title    = element_text(hjust= 0.5, size =16))
+  
+
+
+#Let us remove the sites that had no Phragmites occurance
+#over the surveyed decade:
+
+Phrag <- select(VegAllEnvData,StationFront.year, Year, Community, Phraaust) %>%
+  spread(key = Year, Phraaust, fill = 0) %>%
+  mutate (Total_Cover = Year_2007+Year_2008+Year_2009+Year_2010+Year_2011+Year_2012+Year_2013+Year_2014+Year_2015+Year_2016+Year_2017) %>%
+  filter(Total_Cover > 0) %>%
+  select ( Year_2007:Year_2017, Community, StationFront.year)%>%
+  gather ( Year, Phraaust, Year_2007:Year_2017)
+
+
+p1less<- ggplotRegression(lm(Phraaust ~ Year,
+                         data = Phrag[Phrag$Community=="Freshwater",]))+
+      theme_bw() +   theme(legend.position = "none",
+                      axis.text.x  = element_text(angle = 90),
+                      strip.text = element_text(size = 14),
+                      plot.title = element_text(hjust= 0.5, size =16))
+p1less
 
 #Create a StationFront-level dataset (average over years)==========
 veg7<-veg6 %>%
   group_by(StationFront,Community)%>%
   summarise_at(vars(Acerrubr:ZiziMill),mean,na.rm=T)
 veg7
+
+
+#Table 1====
+#Summary Table 1:  plots per year that were analyzed:
+VegAllEnvData <- read.csv("VegAllEnvData_03may2018.csv")
+
+MyTable <- group_by(VegAllEnvData, year, Community) %>%
+  summarise(n()) %>% spread(Community, `n()` ) %>%
+  mutate (Total = Brackish + Freshwater+ Intermediate + Saline)
+
+MyTable
+#write.csv (MyTable, file = "Table1_23may2018.csv", row.names = F)
 
 
 
