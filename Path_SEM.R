@@ -2,8 +2,11 @@ library("lavaan")
 library("semPlot")
 library("tidyverse")
 library("vegan")
-#See 04_MERGE_VegHydroSoil for details on how "VegAllEnvData_03may2018.csv" was produced.
+library("scatterplot3d")
+library(gridExtra)
+library(grid)
 
+#See 04_MERGE_VegHydroSoil for details on how "VegAllEnvData_03may2018.csv" was produced.
 #"Freshwater" Data ========
 VegAllEnvData <- read.csv("VegAllEnvData_03may2018.csv")
 freshOnly <- VegAllEnvData[ VegAllEnvData$Community=="Freshwater",]
@@ -11,86 +14,121 @@ dim(freshOnly)#now: 603 465
 freshOnly_Clean <- na.omit(freshOnly)#rows with NA-s that need removing
 freshVeg_Cover<-subset(freshOnly_Clean, select = Acerrubr:ZiziMill)  #Freshwater veg cover data only
 
+#ID and remove the most dominant weed from veg matrix:
+colCount = colSums(FreshwaterVeg_Cover) #sum up the abundance column-wise
+topID = order(colCount,decreasing=TRUE)[1:100] # choose top 100 most abundant plant species
+topID = names(FreshwaterVeg_Cover[topID]) # names of plant species in decreasing order
+Freshwater_Plants <- data.frame( specCode = topID)
+Plant_List <- read.csv("LA_Plants.csv")
+str(Plant_List)#data.frame':	3379 obs. of  8 variables:
+
+#join Freshwater_Plants & Plant_List to see which species is invasive:
+Plant_List<- subset(Plant_List, select = c(specCode, nat))
+Freshwater_Plants_Inv <- left_join(Freshwater_Plants,Plant_List, by = "specCode")
+head(Freshwater_Plants_Inv)# most abundant weed is Altephil 
+
+#Compute mean covers per Station, all years:
+fresh.av <-fresh.soil %>% na.omit() %>%
+  group_by(StationFront,Community)%>%
+  summarise_at(vars(richness:ZiziMill),mean,na.rm=T)# %>% na.omit()
+dim(fresh.av)# 41 456
+
+#Subset Veg matrix with no Altephil:
+fresh.av.veg <- subset( fresh.av, select =  Acerrubr:ZiziMill)
+fresh.av.veg.No.Altephil <- subset( fresh.av.veg, select = - Altephil)# 41 448
+fresh.av.veg.No.Altephil2<- fresh.av.veg.No.Altephil [ , colSums(fresh.av.veg.No.Altephil) > 0] #remove zero columns prior PCA, 41 x 268 now
+dim(fresh.av.veg) #             41 449
+dim(fresh.av.veg.No.Altephil)#  41 448
+dim(fresh.av.veg.No.Altephil2)# 41 268
+
 #Create a StationFront-level Freshwater dataset (average over years)
 fresh.soil <- subset(freshOnly_Clean,
                      select = c(StationFront,Community,richness,Mean_SoilSalinity,
                                 meanwaterdepthcm,floodedpercent,
                                 MeanWaterSalinity, Acerrubr:ZiziMill))
 
-fresh.av <-fresh.soil %>% na.omit() %>%
-  group_by(StationFront,Community)%>%
-  summarise_at(vars(richness:ZiziMill),mean,na.rm=T)# %>% na.omit()
-
-#Subset Veg matrix with no Phragmites:
-fresh.av.veg <- subset( fresh.av, select =  Acerrubr:ZiziMill)
-fresh.av.veg.No.Phrag <- subset( fresh.av.veg, select = - Phraaust)# 41 448
-fresh.av.veg.No.Phrag2 <- fresh.av.veg.No.Phrag [ , colSums(fresh.av.veg.No.Phrag) > 0] #remove zero columns prior PCA, 41 x 268 now
 #Subset Environ factors:
-fresh.av.env <-  subset( fresh.av, select = c(Phraaust, Mean_SoilSalinity,meanwaterdepthcm,floodedpercent,richness))
-fresh.av.env$Phragmites <- ifelse(fresh.av.env$Phraaust == 0, "Absent","Present")
+fresh.av.env <-  subset( fresh.av, select = c(Altephil, Mean_SoilSalinity,meanwaterdepthcm,floodedpercent,richness))
+fresh.av.env$TopWeed <- ifelse(fresh.av.env$Altephil == 0, "Absent","Present")
 
-#Compute PCA x - values of the most dominant:
+#Compute PCA x - values of the most dominant native plant:
 #WEB: https://rpubs.com/njvijay/27823
 #WEB#: http://www.sthda.com/english/wiki/print.php?id=207
-fresh.pca <- prcomp(fresh.av.veg.No.Phrag2,center = TRUE,scale. = TRUE)
+fresh.pca <- prcomp(fresh.av.veg.No.Altephil2,center = TRUE,scale. = TRUE)
 names(fresh.pca)#"sdev","rotation", "center","scale","x" 
 summary(fresh.pca)
-biplot(fresh.pca,scale=0, cex=.7)
-#ID the most dominant plant species:
-colCount = colSums(fresh.av.veg.No.Phrag2)
+biplot(fresh.pca,scale=0, cex=.7,var.axes = F)
+#ID the most dominant native plant species:
+colCount = colSums(fresh.av.veg.No.Altephil2)
 topID = order(colCount,decreasing=TRUE)[1] # 
-topID = names(fresh.av.veg.No.Phrag2[topID]) # 
+topID = names(fresh.av.veg.No.Altephil2[topID]) # 
 topID #"Panihemi"
-#ID the most dominant species per each site:
-fresh.av.veg.No.Phrag2$Dominant <- colnames(fresh.av.veg.No.Phrag2)[apply(fresh.av.veg.No.Phrag2,1,which.max)]
-table(fresh.av.veg.No.Phrag2$Dominant)
-#Altephil Bidelaev Cladmari Coloescu Eleomont   EleoRX Leerhexa Moreceri Panihemi 
-#   2        1        1        2        1        2        3        2       13 
-#Polypunc Sagilanc Thelpalu Typhdomi Typhlati   TyphLX   UnknX1 Zizamili 
-#   2        6        1        1        1        1        1        1 
 
-coordinateX <- as.data.frame(fresh.pca$rotation["Panihemi",1:41]) #get all x-axis Composition value
-coordinateX #-0.02192527
-
+#Get loading values for dominant native plant:
+LoadingX <- as.data.frame(fresh.pca$rotation["Panihemi",1:41]) #get all x-axis Composition value
+LoadingX #coordinates of "Panihemi" on all PC axes. To serve as proxy of response of native flora to env.soil and weed effect.
+PC1 <- fresh.pca$x[,1]# = site centroids
+PC1
+PC2 <- fresh.pca$x[,2]# = site centroids
+PC2
+plot(PC1,PC2)#lighter form of biplot
+#Create 3D with loadings of "Panihemi":
+pca.data <-cbind(PC1,PC2, abs(LoadingX))
+colnames(pca.data)[3] <- "TopNat_Xcoord" #rename LoadingX to TopNat_Xcoord
 
 #Compute MDS:
-MDS <- metaMDS(fresh.av.veg.No.Phrag, distance = "bray")#computing distances for Path analysis
-MDS$stress * 100 # =  21.8%.
-plot(MDS$points[,1:2])
+MDS <- metaMDS(fresh.av.veg.No.Altephil2, distance = "bray")#computing distances for Path analysis
+MDS$stress * 100 # =  22.2%.
+plot(MDS$points[,1:2]
 
+#Combine MDS PC and env data together:
 coordinates<-as.data.frame(MDS$points[,1:2]) #get MDS1 (x-axis Comp value)
-veg.nmds<-cbind(coordinates, fresh.av.env)
-dim(veg.nmds)#41  8 = only 41 rows a soil pore water data (Mean_SoilSalinity) is relatively small
-
-names(veg.nmds)#"MDS1","MDS2", "Phraaust","Mean_SoilSalinity","meanwaterdepthcm","floodedpercent","richness","Phragmites" 
+veg.nmds<-cbind(coordinates, fresh.av.env, pca.data  )
+dim(veg.nmds)#only 41 rows a soil pore water data (Mean_SoilSalinity) is relatively small
+names(veg.nmds)#"MDS1","MDS2", "TopNat_Xcoord", "Altephil" ,"Mean_SoilSalinity","meanwaterdepthcm","floodedpercent","richness","Phragmites" 
 #Standarize the variables so their effect size are comparable:
 veg.nmds$Rich <- scale (veg.nmds$richness)
 veg.nmds$Salt <- scale (veg.nmds$Mean_SoilSalinity)
-veg.nmds$Phra <- scale (veg.nmds$Phraaust)
-veg.nmds$Comp <- scale (veg.nmds$MDS1)
+veg.nmds$Weed <- scale (veg.nmds$Altephil)
+veg.nmds$Comp <- scale (veg.nmds$PC1)
 veg.nmds$Flood<- scale (veg.nmds$floodedpercent)
 veg.nmds$Depth<- scale (veg.nmds$meanwaterdepthcm)
+veg.nmds$NatX <- scale (veg.nmds$TopNat_Xcoord)
 
+#Vegan MDS in GGPLOT to see where weeds are present:
+f1<- ggplot(data = pca.data, aes(TopNat_Xcoord,PC1,color = TopWeed)) + geom_point(size=4) +
+  ggtitle("PC1 of Freshwater Communities",
+          subtitle = "averaged across 10 years, TopWeed = altephil")+
+  xlab("X coordinate of top native (Panihemi) off PCA") +theme_bw() +
+  theme(legend.position = "bottom")
 
+f2<-ggplot(data = veg.nmds, aes( TopNat_Xcoord,MDS1, color = TopWeed)) + geom_point(size=4) +
+  ggtitle("NMDS1 of Freshwater Communities",subtitle = "averaged across 10 years, TopWeed = altephil") +
+  xlab("X coordinate of top native (Panihemi) off PCA")+
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+grid.arrange(f1,f2, ncol = 2)
 #SEM FRESHWATER=======
 model1 <- '
 #regressions
-Phra ~ Depth + Salt + Flood
-Rich ~ Phra + Depth + Salt + Flood
-Comp ~ Phra + Depth + Salt + Flood
+
+Rich ~ Depth + Flood
+NatX ~  Depth + Flood 
 
 #covariances
-Rich~~Comp
+Rich ~~ Comp
+NatX ~~ Rich
 '
 fit1 <- sem(model1,missing="direct",estimator="ML",data=veg.nmds)
-summary(fit1a, fit.measures=TRUE,rsquare=T) 
+summary(fit1, fit.measures=TRUE, rsquare=T) 
 
 par(mfrow = c(1,1))
 semPaths(fit1,
          "est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.1,sizeMan = 8,
          edge.label.position = 0.25, nCharNodes=0,
-         residuals =  F)
+         residuals =  F, exoCov = F)
 title("Freshwater SEM (2007-2017), All p-values < 0.05", line = 2)
 
 
