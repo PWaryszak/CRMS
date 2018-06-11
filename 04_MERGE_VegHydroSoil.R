@@ -1,9 +1,10 @@
-#LOAD Libraries and raw data=====
+#LOAD Libraries & DATA =====
 library(tidyverse)
 library(vegan)
 library(plotrix)
 library(nlme)
 library(chron)
+library(Rmisc)
 
 ##### Raw veg data:
 #5 => 75 percent cover; 4 = 50-75 percent cover; 3 = 25-50 percent cover; 2 = 5-25 percent cover; 1 = numerous, but less than 5 percent cover, or scattered, with cover up to 5 percent; + = few, with small cover; and r = rare, solitary, with small cover.
@@ -12,7 +13,7 @@ veg <- read.csv("CRMS_Marsh_Veg.csv")#Data contains cover values for each plant 
 levels(veg$Community)#"Brackish" "Freshwater" "Intermediate" "Saline"
 veg$Community<-factor(veg$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))
 
-length(unique(veg$StationID))
+length(unique(veg$StationID))#3665
 length(unique(veg$StationFront))#342
 
 #Could filter out plots sampled in month 10 or 11 or 12 if I wanted to try harder to make sure
@@ -20,7 +21,7 @@ length(unique(veg$StationFront))#342
 #if I wanted to make sure only post hurricane is sampled, however there aren't many plots like this
 #Make data wide
 veg2 <- veg %>%
-  select(StationID,StationFront,StationBack,day, month, year,Community,Acerrubr:ZiziMill)
+  select(StationID,StationFront,StationBack,day, month, year,Community,Acer_rubrum:Zizi_Mill)
 
 #Make sure each plot has a community for every year (or at least 6 of the 10 years) 2007-2016
 table(veg2$year)#n of records per year.
@@ -46,7 +47,7 @@ StationComm <- group_by(veg3,StationFront,Community) %>%
   count(Count=StationFront)
 StationComm#It gives us count of communities per StationFront
 SCwide<- spread(StationComm, key = Community, value = n, fill = 0)#make it wide
-SCwide$WhichMax<-colnames(SCwide)[apply(SCwide,1,which.max)]#while wide we can see which Comm is predominant
+SCwide$WhichMax<-colnames(SCwide)[apply(SCwide,1,which.max)]#while wide we can see which Comm is dominant
 SCwide
 StationCommDefined<-SCwide[, c(1,7)]
 colnames(StationCommDefined)[2] <- "Community" #Renaming WhichMAx back to Community
@@ -64,12 +65,12 @@ veg4$tot<-rowSums(veg4[,8:456])
 
 #rearrange columns
 veg5 <- veg4 %>%
-  select(StationID:Community.yr,Community,richness:tot,Acerrubr:ZiziMill)
+  select(StationID:Community.yr,Community,richness:tot,Acer_rubrum:Zizi_Mill)
 
-#Plot Phragaust over time========
+#Plot Phraaust over time========
 m1<-veg5%>%
   group_by(year,Community)%>%
-  summarise(mean=mean(Phraaust),se=std.error(Phraaust))
+  summarise(mean=mean(Phra_australis),se=std.error(Phra_australis))
 
 ggplot(m1,aes(x=as.factor(year),y=mean,group=Community, color = Community))+
   labs(x = "Year",y="Mean Cover (%)",colour="Community type")+
@@ -93,49 +94,50 @@ ggplot(m1,aes(x=as.factor(year),y=mean,group=Community, color = Community))+
 
 veg6<-veg5%>%
   group_by(StationFront,Community,year)%>%
-  summarise_at(vars(Acerrubr:ZiziMill),mean,na.rm=T)
+  summarise_at(vars(Acer_rubrum:Zizi_Mill),mean,na.rm=T)
 
 #then compute richness, shannon, and tot
 #on the new averaged stationfront-level species data (~10 survey plots per StationFront)
 #(rather than have them be the average across the small plots)
-veg6$richness <-specnumber (veg6 [,4:451])
-veg6$shannon  <-diversity  (veg6 [,4:451], index="shannon")
-veg6$tot      <-rowSums    (veg6 [,4:451])
-#write.csv(veg6, file = "CRMS_Veg_Per_Site_03may2018.csv")
-str(veg6) # 3606 obs. of  455 variables:
+veg6$richness <-specnumber (veg6 [,4:457])
+veg6$shannon  <-diversity  (veg6 [,4:457], index="shannon")
+veg6$tot      <-rowSums    (veg6 [,4:457])
+#write.csv(veg6, file = "CRMS_veg6_11june2018.csv")
+str(veg6) # 3606 obs. of  460 variables:
 
 
 #JOIN VEG6 with ENVC4 & ENV5 DATA=====
 #ENVC4 is an object produced in "HydrologicDataECF.R" file off raw CRMS environmental data.
-WaterData<-as.data.frame(envc4)#Creating data to merge with veg6, or:
-#WaterData <- read_csv("CRMS_MeanWaterDepth_envc4.csv")
-dim(WaterData)#data.frame':	3374 obs. of  5 variables:
-WaterDataThin <- as.data.frame(select( WaterData, StationFront.year, meanwaterdepthcm, floodedpercent, MeanWaterSalinity))
+#WaterData<-as.data.frame(envc4)#Creating data to merge with veg6, or:
+WaterData <- read.csv("CRMS_MeanWaterDepth_envc4.csv")
+dim(WaterData)#data.frame':	3374 obs. of  15 variables:
+#Select Environ data for analysis:
+WaterDataThin <- as.data.frame(select( WaterData, StationFront.year,
+                                       meanwaterdepthcm, floodedpercent,
+                                       MeanWaterSalinity))
 
-VegData<-as.data.frame(veg6)#veg6 is produced in above lines or as saved csv file:
-#VegData<-read.csv("CRMS_Veg_Per_Site_03may2018.csv.csv")
+VegData<-as.data.frame(veg6)#veg6 is produced in above lines or saved as csv file:
+#VegData<-read.csv("CRMS_veg6_11june2018.csv")
 VegData$StationFront.year<-interaction(VegData$StationFront, VegData$year)#We need that for joining
-dim(VegData) #3606  456
+dim(VegData) #3606  461
 VegDataThin <- as.data.frame(select( VegData,  - StationFront))#to ease joining with inner_join:
                              
 #Join Veg Data with WaterData by StationFront.year, some levels of "StationFront.year" do not overlap:
 VegEnvData<-inner_join(VegDataThin, WaterDataThin , by="StationFront.year" )
-dim(VegEnvData) #2849  458
-#write.csv(VegEnvData, file = "CRMS_VegEnvData_03may2018.csv", row.names = F)
+dim(VegEnvData) #2849  463
+#write.csv(VegEnvData, file = "CRMS_VegEnvData_11june2018.csv", row.names = F)
 
-
-#Join VegEnvData with soil pore water data (env3):
+#Join VegEnvData with soil pore water data (env5):
 dim(env5)#2197    8    #USE "env5"  as produced in "SalinityECF.R" file
-#env5 <- read.csv(as.data.frame(env5), file = "CRMS_Mean_SoilSalinity_env5_03may2018.csv", row.names = F)
-RemoveYear <- env5$year
+env5 <- read.csv("CRMS_Mean_SoilSalinity_env5_11june2018.csv")
 SoilData <- env5 %>%  select ( -year)
 
 VegAllEnvData <- left_join(VegEnvData, SoilData  , by="StationFront.year" )
-dim(VegAllEnvData)#2849  464
-#write.csv(VegAllEnvData, file = "VegAllEnvData_03may2018.csv")
+dim(VegAllEnvData)#2849  469
+#write.csv(VegAllEnvData, file = "VegAllEnvData_11june2018.csv")
 
 #Plot Env Data change over 10 years:======
-VegAllEnvData = read.csv("VegAllEnvData_03may2018.csv")
+VegAllEnvData = read.csv("VegAllEnvData_11june2018.csv")
 VegAllEnvData$Community <- factor(VegAllEnvData$Community, levels = c( "Freshwater","Intermediate","Brackish","Saline"))
 
 #Plot Salinity over years over 4 communities:====
@@ -266,8 +268,7 @@ ggplotRegression(lm(Phraaust ~ Year,
   
 
 
-#Let us remove the sites that had no Phragmites occurance
-#over the surveyed decade:
+#Remove sites that had no Phragmites occurance over the surveyed decade:
 
 Phrag <- select(VegAllEnvData,StationFront.year, Year, Community, Phraaust) %>%
   spread(key = Year, Phraaust, fill = 0) %>%
@@ -285,23 +286,23 @@ p1less<- ggplotRegression(lm(Phraaust ~ Year,
                       plot.title = element_text(hjust= 0.5, size =16))
 p1less
 
-#Create a StationFront-level dataset (average over years)==========
-veg7<-veg6 %>%
+#Create a StationFront-level dataset (average over years if needed)==========
+#veg7<-veg6 %>%
   group_by(StationFront,Community)%>%
-  summarise_at(vars(Acerrubr:ZiziMill),mean,na.rm=T)
+  summarise_at(vars(Acer_rubrum:Zizi_Mill),mean,na.rm=T)
 veg7
 
 
 #Table 1====
 #Summary Table 1:  plots per year that were analyzed:
-VegAllEnvData <- read.csv("VegAllEnvData_03may2018.csv")
+VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
 
-MyTable <- group_by(VegAllEnvData, year, Community) %>%
-  summarise(n()) %>% spread(Community, `n()` ) %>%
-  mutate (Total = Brackish + Freshwater+ Intermediate + Saline)
+MyTable <- select(VegAllEnvData, year, Community) %>%
+  group_by (year, Community) %>%
+  summarize(n()) %>% 
+  spread   (Community, `n()` ) %>%
+  mutate   (Total = Brackish + Freshwater+ Intermediate + Saline)
 
 MyTable
-#write.csv (MyTable, file = "Table1_23may2018.csv", row.names = F)
-
-
+#write.csv (MyTable, file = "Table1_11june2018.csv", row.names = F)
 
