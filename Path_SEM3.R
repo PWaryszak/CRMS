@@ -2,7 +2,7 @@
 #11june2018 - we give up top weed and look at the impact of all weeds:
 #New Veg  data = VegAllEnvData_11june2018
 VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
-
+str(VegAllEnvData) #2849 obs. of  470 variables:
 library("lavaan")
 library("semPlot")
 library("tidyverse")
@@ -19,15 +19,6 @@ dim(freshOnly)#now: 603 470
 freshOnly_Clean <- na.omit(freshOnly)#rows with NA-s that need removing
 FreshwaterVeg_Cover<-subset(freshOnly_Clean, select = Acer_rubrum:Ziza_miliacea)  #Freshwater veg cover data only
 dim(FreshwaterVeg_Cover)# 336 453
-
-#ID and remove the most dominant weed from veg matrix:
-colCount = colSums(FreshwaterVeg_Cover) #sum up the abundance column-wise
-topID = order(colCount,decreasing=TRUE)[1:length(FreshwaterVeg_Cover)] # choose all Freshwater plant species
-topID = names(FreshwaterVeg_Cover[topID]) # names of plant species in decreasing order
-Freshwater_Plant_Sp <- data.frame( specCode = topID)
-Freshwater_Plant_Sp
-Plant_List <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018
-str(Plant_List)#data.frame':	3454 obs. of  6 variables:
 
 #join Freshwater_Plants & Plant_List to see which species are invasive:
 Plant_List<- subset(Plant_List, select = c(specCode, nat))
@@ -46,176 +37,128 @@ fresh.av <-fresh.soil %>% na.omit() %>%
   summarise_at(vars(richness:Ziza_miliacea),mean,na.rm=T)# %>% na.omit()
 dim(fresh.av)# 41 460
 
-#Subset Native Veg matrix (No introduced plants):
+#Subset native/introduced Veg matrix:
+
+#ID and remove the most dominant weed from veg matrix:
+colCount = colSums(FreshwaterVeg_Cover) #sum up the abundance column-wise
+topID = order(colCount,decreasing=TRUE)[1:length(FreshwaterVeg_Cover)] # choose all Freshwater plant species
+topID = names(FreshwaterVeg_Cover[topID]) # names of plant species in decreasing order
+Freshwater_Plant_Sp <- data.frame( specCode = topID)
+Freshwater_Plant_Sp
+Plant_List <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018
+str(Plant_List)#data.frame':	3454 obs. of  6 variables:
+
+#Subset native only
 Freshwater_Native.Species <- filter(Freshwater_Plants, nat == "native")
 Freshwater_Native.Species #346
-#Select only native species from fresh.av:
+#Select natives only from fresh.av:
 fresh.av.veg.native <- subset( fresh.av, select = unique(Freshwater_Native.Species$specCode))
 dim(fresh.av.veg.native)#41 346
 range (colSums(fresh.av.veg.native))#0.00000 98.65938
+fresh.av.veg.native.total <- rowSums (fresh.av.veg.native) #create extra column with total cover of all natives
+
 #Zero colums need to be removed prior ordinations: 
 fresh.av.veg.native.good<- fresh.av.veg.native [ , colSums(fresh.av.veg.native) > 0]
 dim(fresh.av.veg.native.good)#  41 216
 
-#Compute total cover of introduced species per site:
+#Subset introduced only:
 Freshwater_introduced.Species <- filter(Freshwater_Plants, nat == "introduced")
 Freshwater_introduced.Species #346
 fresh.av.veg.introduced <- subset( fresh.av, select = unique(Freshwater_introduced.Species$specCode))
 dim(fresh.av.veg.introduced)#41 43
-fresh.av.veg.introduced.total <- rowSums (fresh.av.veg.introduced)
 range(fresh.av.veg.introduced.total)#0.000000 7.167448
+fresh.av.veg.introduced.total <- rowSums (fresh.av.veg.introduced)#Extra column = total cover of introduced species per site
 
 #Subset Environ factors:
 fresh.av.env <-  subset( fresh.av, select = c( Mean_SoilSalinity,meanwaterdepthcm,
-                                               floodedpercent,richness))
-fresh.av.env$Introduced_Species <- fresh.av.veg.introduced.total
+                                               MeanWaterSalinity,floodedpercent,richness))
+fresh.av.env$Introduced_Cover <- fresh.av.veg.introduced.total
+fresh.av.env$Native_Cover <- fresh.av.veg.native.total
 
 
-#Compute Freshwater PCoA x - values of the most dominant native plant "Panihemi":======
+#Freshwater PCoA x - values of the most dominant = "Pani_hemitomon":======
+colCount_Freshwater = colSums(FreshwaterVeg_Cover) #sum up the abundance column-wise
+topSp_Freshwater = order(colCount_Freshwater,decreasing=TRUE)[1] # 
+topSp_Freshwater = names(FreshwaterVeg_Cover[topSp_Freshwater]) # 
+topSp_Freshwater #"Pani_hemitomon"
+
+#Run PCoA:
 #  WEB >>>  https://www.davidzeleny.net/anadat-r/doku.php/en:pcoa_examples
 #use a PCoA  (principal coordinates analysis) rather than a PCA (Principal components analysis). With PCoA you can
 #use bray curtis dissimilarity (rather than only euclidean distance which is what PCA uses)
 veg.D <- vegdist(fresh.av.veg.native.good, "bray")
 fresh.pca <- cmdscale(veg.D , eig = TRUE)
 names(fresh.pca)#"points" "eig"    "x"      "ac"     "GOF" 
-str(fresh.pca)
 ordiplot(fresh.pca, display = 'sites', type = 'points',
          cex = 2,bg="yellow")
-
 
 #Draw Ordination points:
 #Combine MDS PC and env data together:
 coordinates<-as.data.frame(fresh.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
 veg.nmds<-cbind(coordinates, fresh.av.env)
-dim(veg.nmds)#only 41 7
-names(veg.nmds)#""V1"    "V2"   "Mean_SoilSalinity"  "meanwaterdepthcm"   "floodedpercent" "richness",Introduced_Species
-     
+dim(veg.nmds)#only 41 9
+names(veg.nmds)#
+
 #Standarize the variables so their effect size are comparable:
-veg.nmds$Rich <- scale (veg.nmds$richness)
-veg.nmds$Salt <- scale (veg.nmds$Mean_SoilSalinity)
-veg.nmds$Weed <- scale (veg.nmds$Introduced_Species)
-veg.nmds$Comp <- scale (veg.nmds$V1)
+veg.nmds$Richness <- scale (veg.nmds$richness)
+veg.nmds$Soil <- scale (veg.nmds$Mean_SoilSalinity)
+veg.nmds$Water <- scale (veg.nmds$MeanWaterSalinity)
+veg.nmds$Alien <- scale (veg.nmds$Introduced_Cover)
+veg.nmds$Native <- scale (veg.nmds$Native_Cover)
+veg.nmds$Composition <- scale (veg.nmds$V1)
 veg.nmds$Flood<- scale (veg.nmds$floodedpercent)
 veg.nmds$Depth<- scale (veg.nmds$meanwaterdepthcm)
 
-#Vegan MDS in GGPLOT to see where weeds are present:
-ggplot(data = veg.nmds, aes(V1,V2,size = Introduced_Species)) + geom_point() +
+#Vegan MDS in GGPLOT to see where weeds are most abundant:
+ggplot(data = veg.nmds, aes(V1,V2,size = Introduced_Cover)) + geom_point() +
        ggtitle("PCoA of Freshwater Communities",subtitle = "averaged across 10 years, TopWeed = altephil") +
        xlab("X coordinate of PCoA")+ylab("Y coordinate of PCoA")+
        theme(legend.position = "bottom")
      
-#SEM FRESHWATER=======
-     model1 <- '
-     #regressions
-     
-     Rich ~ Depth + Flood
-     NatX ~  Depth + Flood 
-     
-     #covariances
-     Rich ~~ Comp
-     NatX ~~ Rich
+#Freshwater SEM  with SOIL salinity =======
+model1 <- '
+#regressions:
+
+Richness ~ Depth +Soil +Flood +Alien
+Composition ~ Depth + Flood + Soil + Alien
+Alien ~ Depth + Flood + Soil 
+
+
+#covariances:
+Richness ~~ Composition
      '
-     fit1 <- sem(model1,missing="direct",estimator="ML",data=veg.nmds)
-     summary(fit1, fit.measures=TRUE, rsquare=T) 
-     
-     par(mfrow = c(1,1))
-     semPaths(fit1,
-              "est", intercepts = F, fade = F, 
+fit1 <- sem(model1,missing="direct",estimator="ML",data=veg.nmds)
+summary(fit1, fit.measures=TRUE, rsquare=T) 
+
+#Design layout for our SemPath Diagram boxes:
+lay<-matrix(c(-0.5,  -0.5,
+              0.5,  -0.5,
+              0,    -0.3, #Alien Position
+              -0.5,   0.5,
+              0,     0.5,
+              0.5,   0.5), ncol=2,byrow=TRUE)
+
+#Extrat p-values to control edge.label.bg & edge.label.font in semPaths:
+extractPvalues<-parameterEstimates(fit1)#Thansk to WEB: http://lavaan.ugent.be/tutorial/inspect.html
+extractPvalues[1:13, "pvalue"]#First 13 values are for our regressions
+FreshSigData <- data.frame(Pvalue =extractPvalues[1:13, "pvalue"])#First 11 values are for our regressions
+FreshSigData
+Bold_Fresh_Sig <- as.integer(ifelse(FreshSigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
+Bold_Fresh_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
+Fresh_Label_bg <- ifelse(FreshSigData$Pvalue < 0.05 ,"yellow","white")# coding background labels
+
+#Run semPaths:
+par(mfrow = c(1,1))
+semPaths(fit1,"est", intercepts = F, fade = F, 
               title = T, edge.label.cex = 1.1,sizeMan = 8,
-              edge.label.position = 0.25, nCharNodes=0,
-              residuals =  F, exoCov = F)
-     title("Freshwater SEM (2007-2017), All p-values < 0.05", line = 2)
-     
-     
-     
-     #Removing non-significant terms:
-     model1a <- '
-     #regressions
-     Rich ~  Depth  + Flood
-     Comp ~  Depth  + Salt + Flood
-     
-     #covariances
-     Rich~~Comp
-     '
-     
-     fit1a <- sem(model1a,missing="direct",estimator="ML",data=veg.nmds)
-     summary(fit1a, fit.measures=TRUE,rsquare=T) 
-     
-     par(mfrow = c(1,1))
-     semPaths(fit1a,
-              "est", intercepts = F, fade = F, 
-              title = T, edge.label.cex = 1.1,sizeMan = 8,
-              edge.label.position = 0.25, nCharNodes=0,
-              residuals =  F)
-     title("Freshwater SEM (2007-2017), All p-values < 0.05", line = 2)
-     
-     #Old Freshwater Path Analysis====
-     #Standardize (subtract mean and divide by sd) 
-     #all columns of your dataframe prior to path analysis, 
-     #then your coefficients will be standardized and you can compare their magnitudes as importance.
-     Fresh1 <- lm (Rich ~ Comp,   data = veg.nmds)
-     Fresh2 <- lm (Comp ~ Rich,    data = veg.nmds)
-     Fresh3 <- lm (Phra ~ Depth,  data = veg.nmds)
-     Fresh4 <- lm (Phra ~ Flood,  data = veg.nmds)
-     Fresh5 <- lm (Phra ~ Salt ,  data = veg.nmds)
-     Fresh6 <- lm (Comp ~ Phra,   data = veg.nmds)
-     Fresh7 <- lm (Rich ~ Phra,    data = veg.nmds)
-     Fresh8 <- lm (Comp ~ Depth,  data = veg.nmds)
-     Fresh9 <- lm (Comp ~ Flood,  data = veg.nmds)
-     Fresh10<- lm (Comp ~ Salt ,  data = veg.nmds)
-     
-     #Check residuals:
-     par(mfrow = c(2,5))
-     plot(Fresh1, which = 1, main = "Fresh1 = lm (Rich ~ Comp)" )
-     plot(Fresh2, which = 1, main = "Fresh2 = lm (Comp ~ Rich)" )
-     plot(Fresh3, which = 1, main = "Fresh3 = lm (Phra ~ Depth)" )
-     plot(Fresh4, which = 1, main = "Fresh4 = lm (Phra ~ Flood)" )
-     plot(Fresh5, which = 1, main = "Fresh5 = lm (Phra ~ Salt)" )
-     plot(Fresh6, which = 1, main = "Fresh6 = lm (Comp ~ Phra)" )
-     plot(Fresh7, which = 1, main = "Fresh7 = lm (Rich ~ Phra)" )
-     plot(Fresh8, which = 1, main = "Fresh8 = lm (Comp ~ Depth)" )
-     plot(Fresh9, which = 1, main = "Fresh9 = lm (Comp ~ Flood)" )
-     plot(Fresh10, which =1, main = "Fresh10 = lm (Comp ~ Salt)" )
-     
-     
-     FreshSigData <- data.frame(Pvalue = c(summary(Fresh1)$coefficients[2,4],
-                                           summary(Fresh2)$coefficients[2,4],
-                                           summary(Fresh3)$coefficients[2,4],
-                                           summary(Fresh4)$coefficients[2,4],
-                                           summary(Fresh5)$coefficients[2,4],
-                                           summary(Fresh6)$coefficients[2,4],
-                                           summary(Fresh7)$coefficients[2,4],
-                                           summary(Fresh8)$coefficients[2,4],
-                                           summary(Fresh9)$coefficients[2,4],
-                                           summary(Fresh10)$coefficients[2,4]))
-     
-     
-     FreshSigData 
-     Bold_Fresh_Sig <- as.integer(ifelse(FreshSigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
-     Bold_Fresh_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
-     
-     #ly is a pre-designed layout for our SemPath Diagram boxes:
-     lay<-matrix(c(-0.5,  -0.5,
-                   0.5,  -0.5,
-                   -0.5,   0.5,
-                   0,  -0.3,
-                   0,   0.5,
-                   0.5,   0.5), ncol=2,byrow=TRUE)
-     #Set groups for coloring, if legend = TRUE it will be displayed on the right:
-     grps<-list(Abiotic=c("Depth","Salt","Flood"),Invasive_Phragmites=c("Phra"), Composition = c("Comp","Rich"))
-     
-     #ALL IN:
-     par(mfrow = c(1,1))
-     semPaths(Fresh1 +Fresh2 +Fresh3+ Fresh4 +Fresh5 +Fresh6+
-                Fresh7  +Fresh8 + Fresh9 + Fresh10 ,
-              "est", intercepts = F, fade = F,  edge.label.font = Bold_Fresh_Sig,
-              title = T, edge.label.cex = 1.4,layout = lay,
-              color=c("lightblue","green","lightgreen"),groups=grps,
-              sizeMan = 12, nCharNodes=0, asize = 5,legend=FALSE,
-              edge.label.position = 0.3)
-     title("Freshwater (2007-2017)", line = 2)
-     
-     #PCA Biplot Freshwater====
+              edge.label.position = 0.25, nCharNodes=6,
+              residuals =  F, exoCov = F,layout = lay,
+              edge.label.font = Bold_Fresh_Sig,
+              edge.label.bg = Fresh_Label_bg)
+title("Freshwater path analysis (2007-2017)", line = -1)
+
+
+#Freshwater PCA Biplot ====
      #As coordinateX is negative we can flip the pca chart to positive:
      pca.out <- fresh.pca
      pca.out$rotation <- -pca.out$rotation
@@ -234,7 +177,7 @@ ggplot(data = veg.nmds, aes(V1,V2,size = Introduced_Species)) + geom_point() +
      plot(0,0, xlim = c(-0.5,0.5), ylim = c(-0.5,0.5),main = "Panihemi", col="red" )
      arrows(0,0, coordPeniHemi[1,1], coordPeniHemi[1,2])
      
-     #"Brackish" Data ========
+#"Brackish" Data ========
      VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
      BrackishOnly <- VegAllEnvData[ VegAllEnvData$Community=="Brackish",]
      dim(BrackishOnly)#now: 608 465
