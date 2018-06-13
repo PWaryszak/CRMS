@@ -14,31 +14,26 @@ library("grid")
 #See 04_MERGE_VegHydroSoil for details on how "VegAllEnvData_11june2018.csv" was produced.
 #"Freshwater" Data ========
 VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
-freshOnly <- VegAllEnvData[ VegAllEnvData$Community=="Freshwater",]
-dim(freshOnly)#now: 603 470
-freshOnly_Clean <- na.omit(freshOnly)#rows with NA-s that need removing
-FreshwaterVeg_Cover<-subset(freshOnly_Clean, select = Acer_rubrum:Ziza_miliacea)  #Freshwater veg cover data only
+FreshwaterOnly <- VegAllEnvData[ VegAllEnvData$Community=="Freshwater",]
+FreshwaterOnly_Clean <- na.omit(FreshwaterOnly)#rows with NA-s that need removing
+FreshwaterVeg_Cover<-subset(FreshwaterOnly_Clean, select = Acer_rubrum:Ziza_miliacea)  #Freshwater veg cover data only
 dim(FreshwaterVeg_Cover)# 336 453
 
-#join Freshwater_Plants & Plant_List to see which species are invasive:
-Plant_List<- subset(Plant_List, select = c(specCode, nat))
-Freshwater_Plants <- left_join(Freshwater_Plant_Sp,Plant_List, by = "specCode")
-head(Freshwater_Plants)# most abundant weed is Altephil 
+dim(FreshwaterOnly)#now: 603 470
 
 #Create a StationFront-level Freshwater dataset (average over years)
-fresh.soil <- subset(freshOnly_Clean,
+Freshwater.soil <- subset(FreshwaterOnly_Clean,
                      select = c(StationFront,Community,richness,Mean_SoilSalinity,
                                 meanwaterdepthcm,floodedpercent,
                                 MeanWaterSalinity, Acer_rubrum:Ziza_miliacea))
 
 #Compute mean covers per Station, all years:
-fresh.av <-fresh.soil %>% na.omit() %>%
+Freshwater.av <-Freshwater.soil %>% na.omit() %>%
   group_by(StationFront,Community)%>%
   summarise_at(vars(richness:Ziza_miliacea),mean,na.rm=T)# %>% na.omit()
-dim(fresh.av)# 41 460
+dim(Freshwater.av)# 41 460
 
 #Subset native/introduced Veg matrix:
-
 #ID and remove the most dominant weed from veg matrix:
 colCount = colSums(FreshwaterVeg_Cover) #sum up the abundance column-wise
 topID = order(colCount,decreasing=TRUE)[1:length(FreshwaterVeg_Cover)] # choose all Freshwater plant species
@@ -46,37 +41,44 @@ topID = names(FreshwaterVeg_Cover[topID]) # names of plant species in decreasing
 Freshwater_Plant_Sp <- data.frame( specCode = topID)
 Freshwater_Plant_Sp
 Plant_List <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018
-str(Plant_List)#data.frame':	3454 obs. of  6 variables:
+str(Plant_List)#data.frame':	3454 obs. of  6 variables
+
+#join Freshwater_Plants & Plant_List to see which species are invasive:
+Plant_List<- subset(Plant_List, select = c(specCode, nat))
+Freshwater_Plants <- left_join(Freshwater_Plant_Sp,Plant_List, by = "specCode")
+head(Freshwater_Plants)# most abundant weed is Altephil 
 
 #Subset native only
 Freshwater_Native.Species <- filter(Freshwater_Plants, nat == "native")
 Freshwater_Native.Species #346
-#Select natives only from fresh.av:
-fresh.av.veg.native <- subset( fresh.av, select = unique(Freshwater_Native.Species$specCode))
-dim(fresh.av.veg.native)#41 346
-range (colSums(fresh.av.veg.native))#0.00000 98.65938
-fresh.av.veg.native.total <- rowSums (fresh.av.veg.native) #create extra column with total cover of all natives
+#Select natives only from Freshwater.av:
+Freshwater.av.veg.native <- subset( Freshwater.av, select = unique(Freshwater_Native.Species$specCode))
+dim(Freshwater.av.veg.native)#41 346
+range (colSums(Freshwater.av.veg.native))#0.00000 98.65938
+Freshwater.av.veg.native.total <- rowSums (Freshwater.av.veg.native) #create extra column with total cover of all natives
 
 #Zero colums need to be removed prior ordinations: 
-fresh.av.veg.native.good<- fresh.av.veg.native [ , colSums(fresh.av.veg.native) > 0]
-dim(fresh.av.veg.native.good)#  41 216
+Freshwater.av.veg.native.good<- Freshwater.av.veg.native [ , colSums(Freshwater.av.veg.native) > 0]
+dim(Freshwater.av.veg.native.good)#  41 216
+Freshwater_Native_Richness <- specnumber(Freshwater.av.veg.native.good)#Compute Native-Only richness
+range(Freshwater_Native_Richness)#13 83
 
 #Subset introduced only:
 Freshwater_introduced.Species <- filter(Freshwater_Plants, nat == "introduced")
 Freshwater_introduced.Species #346
-fresh.av.veg.introduced <- subset( fresh.av, select = unique(Freshwater_introduced.Species$specCode))
-dim(fresh.av.veg.introduced)#41 43
-range(fresh.av.veg.introduced.total)#0.000000 7.167448
-fresh.av.veg.introduced.total <- rowSums (fresh.av.veg.introduced)#Extra column = total cover of introduced species per site
+Freshwater.av.veg.introduced <- subset( Freshwater.av, select = unique(Freshwater_introduced.Species$specCode))
+dim(Freshwater.av.veg.introduced)#41 43
+range(Freshwater.av.veg.introduced.total)#0.000000 7.167448
+Freshwater.av.veg.introduced.total <- rowSums (Freshwater.av.veg.introduced)#Extra column = total cover of introduced species per site
 
 #Subset Environ factors:
-fresh.av.env <-  subset( fresh.av, select = c( Mean_SoilSalinity,meanwaterdepthcm,
+Freshwater.av.env <-  subset( Freshwater.av, select = c( Mean_SoilSalinity,meanwaterdepthcm,
                                                MeanWaterSalinity,floodedpercent,richness))
-fresh.av.env$Introduced_Cover <- fresh.av.veg.introduced.total
-fresh.av.env$Native_Cover <- fresh.av.veg.native.total
+Freshwater.av.env$Introduced_Cover <- Freshwater.av.veg.introduced.total
+Freshwater.av.env$Native_Cover <- Freshwater.av.veg.native.total
+Freshwater.av.env$Native_Richness <- Freshwater_Native_Richness 
 
-
-#Freshwater PCoA x - values of the most dominant = "Pani_hemitomon":======
+#Freshwater most dominant = "Pani_hemitomon":======
 colCount_Freshwater = colSums(FreshwaterVeg_Cover) #sum up the abundance column-wise
 topSp_Freshwater = order(colCount_Freshwater,decreasing=TRUE)[1] # 
 topSp_Freshwater = names(FreshwaterVeg_Cover[topSp_Freshwater]) # 
@@ -86,21 +88,21 @@ topSp_Freshwater #"Pani_hemitomon"
 #  WEB >>>  https://www.davidzeleny.net/anadat-r/doku.php/en:pcoa_examples
 #use a PCoA  (principal coordinates analysis) rather than a PCA (Principal components analysis). With PCoA you can
 #use bray curtis dissimilarity (rather than only euclidean distance which is what PCA uses)
-veg.D <- vegdist(fresh.av.veg.native.good, "bray")
-fresh.pca <- cmdscale(veg.D , eig = TRUE)
-names(fresh.pca)#"points" "eig"    "x"      "ac"     "GOF" 
-ordiplot(fresh.pca, display = 'sites', type = 'points',
+Freshwater_distance <- vegdist(Freshwater.av.veg.native.good, "bray")
+Freshwater.pca <- cmdscale(Freshwater_distance , eig = TRUE)
+names(Freshwater.pca)#"points" "eig"    "x"      "ac"     "GOF" 
+ordiplot(Freshwater.pca, display = 'sites', type = 'points',
          cex = 2,bg="yellow")
 
 #Draw Ordination points:
 #Combine MDS PC and env data together:
-coordinates<-as.data.frame(fresh.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
-veg.nmds<-cbind(coordinates, fresh.av.env)
-dim(veg.nmds)#only 41 9
-names(veg.nmds)#
+coordinates<-as.data.frame(Freshwater.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
+veg.nmds<-cbind(coordinates, Freshwater.av.env)
+dim(veg.nmds)#only 41 10
 
 #Standarize the variables so their effect size are comparable:
-veg.nmds$Richness <- scale (veg.nmds$richness)
+veg.nmds$TotRich <- scale (veg.nmds$richness)
+veg.nmds$NatRich <- scale (veg.nmds$Native_Richness)
 veg.nmds$Soil <- scale (veg.nmds$Mean_SoilSalinity)
 veg.nmds$Water <- scale (veg.nmds$MeanWaterSalinity)
 veg.nmds$Alien <- scale (veg.nmds$Introduced_Cover)
@@ -119,13 +121,13 @@ ggplot(data = veg.nmds, aes(V1,V2,size = Introduced_Cover)) + geom_point() +
 model1 <- '
 #regressions:
 
-Richness ~ Depth +Soil +Flood +Alien
+NatRich  ~ Depth +Soil +Flood +Alien
 Composition ~ Depth + Flood + Soil + Alien
 Alien ~ Depth + Flood + Soil 
 
 
 #covariances:
-Richness ~~ Composition
+NatRich  ~~ Composition
      '
 fit1 <- sem(model1,missing="direct",estimator="ML",data=veg.nmds)
 summary(fit1, fit.measures=TRUE, rsquare=T) 
@@ -141,11 +143,11 @@ lay<-matrix(c(-0.5,  -0.5,
 #Extrat p-values to control edge.label.bg & edge.label.font in semPaths:
 extractPvalues<-parameterEstimates(fit1)#Thansk to WEB: http://lavaan.ugent.be/tutorial/inspect.html
 extractPvalues[1:13, "pvalue"]#First 13 values are for our regressions
-FreshSigData <- data.frame(Pvalue =extractPvalues[1:13, "pvalue"])#First 11 values are for our regressions
-FreshSigData
-Bold_Fresh_Sig <- as.integer(ifelse(FreshSigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
-Bold_Fresh_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
-Fresh_Label_bg <- ifelse(FreshSigData$Pvalue < 0.05 ,"yellow","white")# coding background labels
+FreshwaterSigData <- data.frame(Pvalue =extractPvalues[1:13, "pvalue"])#First 11 values are for our regressions
+FreshwaterSigData
+Bold_Freshwater_Sig <- as.integer(ifelse(FreshwaterSigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
+Bold_Freshwater_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
+Freshwater_Label_bg <- ifelse(FreshwaterSigData$Pvalue < 0.05 ,"yellow","white")# coding background labels
 
 #Run semPaths:
 par(mfrow = c(1,1))
@@ -153,497 +155,464 @@ semPaths(fit1,"est", intercepts = F, fade = F,
               title = T, edge.label.cex = 1.1,sizeMan = 8,
               edge.label.position = 0.25, nCharNodes=6,
               residuals =  F, exoCov = F,layout = lay,
-              edge.label.font = Bold_Fresh_Sig,
-              edge.label.bg = Fresh_Label_bg)
-title("Freshwater path analysis (2007-2017)", line = -1)
+              edge.label.font = Bold_Freshwater_Sig,
+              edge.label.bg = Freshwater_Label_bg ,filetype = "jpg",filename = "SEM_Freshwater2018")
+title("Freshwater path analysis (2007-2017)", line = 1)
 
 
-#Freshwater PCA Biplot ====
-     #As coordinateX is negative we can flip the pca chart to positive:
-     pca.out <- fresh.pca
-     pca.out$rotation <- -pca.out$rotation
-     pca.out$x <- -pca.out$x
-     biplot(pca.out,scale=0, cex=.6)
-     coordinateX2 <- as.data.frame(pca.out$rotation["Panihemi",1:41]) #get MDS1 (x-axis Comp value)
-     coord2 <- cbind (coordinateX,coordinateX2)
-     coord2 #after flipping positive values = abs(negative value)
-     
-     PC1=fresh.pca$rotation["Panihemi",1]
-     PC2=fresh.pca$rotation["Panihemi",2]
-     coordPeniHemi <- cbind(PC1,PC2)
-     coordPeniHemi #0.02192527 -0.100972
-     par(mfrow = c(1,2))
-     biplot(fresh.pca,scale=0, cex=.6, main = "Freshwater PCA")
-     plot(0,0, xlim = c(-0.5,0.5), ylim = c(-0.5,0.5),main = "Panihemi", col="red" )
-     arrows(0,0, coordPeniHemi[1,1], coordPeniHemi[1,2])
-     
+
+
 #"Brackish" Data ========
-     VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
-     BrackishOnly <- VegAllEnvData[ VegAllEnvData$Community=="Brackish",]
-     dim(BrackishOnly)#now: 608 465
-     BrackishOnly_Clean <- na.omit(BrackishOnly)#rows with NA-s that need removing
-     BrackishVeg_Cover<-subset(BrackishOnly_Clean, select = Acer_rubrum:Ziza_miliacea)  #Brackish veg cover data only
-     
-     #Create a StationFront-level Brackish dataset (average over years)
-     Brackish.soil <- subset(BrackishOnly_Clean,
-                             select = c(StationFront,Community,richness,
-                                        meanwaterdepthcm,floodedpercent,Mean_SoilSalinity, Acer_rubrum:Ziza_miliacea))
-     
-     #compute mean cover per site (station);
-     Brackish.av <-Brackish.soil %>% na.omit() %>%
-       group_by(StationFront,Community)%>%
-       summarise_at(vars(richness:Ziza_miliacea),mean,na.rm=T) %>% na.omit()
-     
-     #Subset Veg matrix with no Phragmites:
-     Brackish.av.veg <- subset( Brackish.av, select =  Acer_rubrum:Ziza_miliacea)
-     Brackish.av.veg.No.Phrag <- subset( Brackish.av.veg, select = - Phraaust)
-     
-     #Subset Environ factors:
-     Brackish.av.env <-  subset( Brackish.av, select = c(Phraaust,meanwaterdepthcm,floodedpercent, Mean_SoilSalinity,richness))
-     Brackish.av.env$Phragmites <- ifelse(Brackish.av.env$Phraaust == 0, "Absent","Present")
-     
-     
-     #Compute MDS:
-     MDS_Brackish <- metaMDS(Brackish.av.veg.No.Phrag, distance = "bray")#computing distances for Path analysis
-     MDS_Brackish$stress * 100 # =  21.57%.
-     plot(MDS_Brackish$points[,1:2])
-     
-     coordinates_Brackish<-as.data.frame(MDS_Brackish$points[,1:2]) #get MDS1 (x-axis Comp value)
-     veg.nmds_Brackish<-cbind(coordinates_Brackish, Brackish.av.env)
-     dim(veg.nmds_Brackish)#40  6 = only 41 rows a soil pore water data (Mean_SoilSalinity) is relatively small
-     
-     #Standardize all variables using scale function:
-     names(veg.nmds_Brackish)#"MDS1","MDS2", "Phraaust","Mean_SoilSalinity","richness","Phragmites" 
-     veg.nmds_Brackish$Rich <- scale (veg.nmds_Brackish$richness)
-     veg.nmds_Brackish$Salt <- scale (veg.nmds_Brackish$Mean_SoilSalinity)
-     veg.nmds_Brackish$Phra <- scale (veg.nmds_Brackish$Phraaust)
-     veg.nmds_Brackish$Comp <- scale (veg.nmds_Brackish$MDS1)
-     veg.nmds_Brackish$Flood<- scale (veg.nmds_Brackish$floodedpercen)
-     veg.nmds_Brackish$Depth<- scale (veg.nmds_Brackish$meanwaterdepthcm)
-     
-     #Old Freshwater Path Analysis====
-     #Compute coefficients for path analysis diagram:
-     Brackish1 <- lm (Rich ~ Comp,   data = veg.nmds_Brackish)
-     Brackish2 <- lm (Comp~ Rich,    data = veg.nmds_Brackish)
-     Brackish3 <- lm (Phra ~ Depth,  data = veg.nmds_Brackish)
-     Brackish4 <- lm (Phra ~ Flood,  data = veg.nmds_Brackish)
-     Brackish5 <- lm (Phra ~ Salt ,  data = veg.nmds_Brackish)
-     Brackish6 <- lm (Comp ~ Phra,   data = veg.nmds_Brackish)
-     Brackish7 <- lm (Rich~ Phra,    data = veg.nmds_Brackish)
-     Brackish8 <- lm (Comp ~ Depth,  data = veg.nmds_Brackish)
-     Brackish9 <- lm (Comp ~ Flood,  data = veg.nmds_Brackish)
-     Brackish10<- lm (Comp ~ Salt ,  data = veg.nmds_Brackish)
-     
-     BrackishSigData <- data.frame(Pvalue = c(summary(Brackish1)$coefficients[2,4],
-                                              summary(Brackish2)$coefficients[2,4],
-                                              summary(Brackish3)$coefficients[2,4],
-                                              summary(Brackish4)$coefficients[2,4],
-                                              summary(Brackish5)$coefficients[2,4],
-                                              summary(Brackish6)$coefficients[2,4],
-                                              summary(Brackish7)$coefficients[2,4],
-                                              summary(Brackish8)$coefficients[2,4],
-                                              summary(Brackish9)$coefficients[2,4],
-                                              summary(Brackish10)$coefficients[2,4]))
-     
-     
-     BrackishSigData 
-     Bold_Brackish_Sig <- as.integer(ifelse(BrackishSigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
-     Bold_Brackish_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
-     
-     #ly is a pre-designed layout for our SemPath Diagram boxes:
-     lay<-matrix(c(-0.5,  -0.5,
-                   0.5,  -0.5,
-                   -0.5,   0.5,
-                   0,  -0.3,
-                   0,   0.5,
-                   0.5,   0.5), ncol=2,byrow=TRUE)
-     #Set groups for coloring, if legend = TRUE it will be displayed on the right:
-     grps<-list(Abiotic=c("Depth","Salt","Flood"),Invasive_Phragmites=c("Phra"), Composition = c("Comp","Rich"))
-     
-     #ALL IN:
-     semPaths(Brackish1 +Brackish2 +Brackish3+ Brackish4 +Brackish5 +Brackish6+
-                Brackish7  +Brackish8 + Brackish9 + Brackish10 ,
-              "est", intercepts = F, fade = F,  edge.label.font = Bold_Brackish_Sig,
-              title = T, edge.label.cex = 1.4,layout = lay,
-              color=c("lightblue","green","lightgreen"),groups=grps,
-              sizeMan = 12, nCharNodes=0, asize = 5,legend=FALSE,
-              edge.label.position = 0.3)
-     title("Brackish (2007-2017)", line = 2)
-     
-     #Check the distribution of residuals:
-     par(mfrow = c(2,5))
-     plot(Brackish1, which = 1, main = "Brackish1 = lm (Rich ~ Comp)" )
-     plot(Brackish2, which = 1, main = "Brackish2 = lm (Comp ~ Rich)" )
-     plot(Brackish3, which = 1, main = "Brackish3 = lm (Phra ~ Depth)" )
-     plot(Brackish4, which = 1, main = "Brackish4 = lm (Phra ~ Flood)" )
-     plot(Brackish5, which = 1, main = "Brackish5 = lm (Phra ~ Salt)" )
-     plot(Brackish6, which = 1, main = "Brackish6 = lm (Comp ~ Phra)" )
-     plot(Brackish7, which = 1, main = "Brackish7 = lm (Rich ~ Phra)" )
-     plot(Brackish8, which = 1, main = "Brackish8 = lm (Comp ~ Depth)" )
-     plot(Brackish9, which = 1, main = "Brackish9 = lm (Comp ~ Flood)" )
-     plot(Brackish10, which = 1, main = "Brackish10 = lm (Comp ~ Salt)" )
-     
-     #Vegan MDS in GGPLOT:
-     ggplot(data = veg.nmds_Brackish, aes(MDS1, MDS2,color = Phragmites)) + geom_point(size=4) +
-       ggtitle("NMDS of Brackish Communities",subtitle = "averaged across 10 years")
-     
-     
-     #SEM BRACKSIH=========
-     
-     model2 <- '
-     #regressions
-     Phra ~ Depth + Salt + Flood
-     Rich ~ Phra + Depth + Salt + Flood
-     Comp ~ Phra + Depth + Salt + Flood
-     
-     #covariances
-     Rich~~Comp
-     '
-     
-     fit2 <- sem(model2,missing="direct",estimator="ML",data=veg.nmds_Brackish)
-     summary(fit2, fit.measures=TRUE,rsquare=T) 
-     
-     par(mfrow = c(1,1))
-     semPaths(fit2,
-              "est", intercepts = F, fade = F, 
+VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
+Brackish_Only <- VegAllEnvData[ VegAllEnvData$Community=="Brackish",]
+dim(Brackish_Only)#now: 608 470
+Brackish_Only_Clean <- na.omit(Brackish_Only)#rows with NA-s that need removing
+BrackishVeg_Cover<-subset(Brackish_Only_Clean, select = Acer_rubrum:Ziza_miliacea)  #Brackish veg cover data only
+dim(BrackishVeg_Cover)# 284 453
+
+#Create a StationFront-level Brackish dataset (average over years)
+Brackish.soil <- subset(Brackish_Only_Clean,
+                     select = c(StationFront,Community,richness,Mean_SoilSalinity,
+                                meanwaterdepthcm,floodedpercent,
+                                MeanWaterSalinity, Acer_rubrum:Ziza_miliacea))
+
+#Compute mean covers per Station, all years:
+Brackish.av <-Brackish.soil %>% na.omit() %>%
+  group_by(StationFront,Community)%>%
+  summarise_at(vars(richness:Ziza_miliacea),mean,na.rm=T)# %>% na.omit()
+dim(Brackish.av)# 40 460
+
+#Subset native/introduced Veg matrix:
+#ID and remove the most dominant weed from veg matrix:
+#join Brackish_Plants & Plant_List to see which species are invasive:
+Plant_List <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018
+str(Plant_List)#data.frame':	3454 obs. of  6 variables:
+Plant_List<- subset(Plant_List, select = c(specCode, nat))
+
+colCount = colSums(BrackishVeg_Cover) #sum up the abundance column-wise
+topID = order(colCount,decreasing=TRUE)[1:length(BrackishVeg_Cover)] # choose all Brackish plant species
+topID = names(BrackishVeg_Cover[topID]) # names of plant species in decreasing order
+Brackish_Plant_Sp <- data.frame( specCode = topID)
+Brackish_Plant_Sp
+Brackish_Plants <- left_join(Brackish_Plant_Sp,Plant_List, by = "specCode")
+head(Brackish_Plants)
+
+#Subset native only
+Brackish_Native.Species <- filter(Brackish_Plants, nat == "native")
+Brackish_Native.Species #346
+#Select natives only from Brackish.av:
+Brackish.av.veg.native <- subset( Brackish.av, select = unique(Brackish_Native.Species$specCode))
+dim(Brackish.av.veg.native)#40 346
+range (colSums(Brackish.av.veg.native))# 0.0000 711.6422
+Brackish.av.veg.native.total <- rowSums (Brackish.av.veg.native) #create extra column with total cover of all natives
+
+#Zero colums need to be removed prior ordinations: 
+Brackish.av.veg.native.good<- Brackish.av.veg.native [ , colSums(Brackish.av.veg.native) > 0]
+dim(Brackish.av.veg.native.good)#  41 73
+
+#Subset introduced only:
+Brackish_introduced.Species <- filter(Brackish_Plants, nat == "introduced")
+Brackish_introduced.Species #43
+Brackish.av.veg.introduced <- subset( Brackish.av, select = unique(Brackish_introduced.Species$specCode))
+dim(Brackish.av.veg.introduced)#40 43
+range(Brackish.av.veg.introduced)#0.000000 3.071408
+Brackish.av.veg.introduced.total <- rowSums (Brackish.av.veg.introduced)#Extra column = total cover of introduced species per site
+
+#Subset Environ factors:
+Brackish.av.env <-  subset( Brackish.av, select = c( Mean_SoilSalinity,meanwaterdepthcm,
+                                               MeanWaterSalinity,floodedpercent,richness))
+Brackish.av.env$Introduced_Cover <- Brackish.av.veg.introduced.total
+Brackish.av.env$Native_Cover <- Brackish.av.veg.native.total
+Brackish_Native_Richness <- specnumber(Brackish.av.veg.native.good)#Compute Native-Only richness
+range(Brackish_Native_Richness)#4 26
+Brackish.av.env$Native_Richness <- Brackish_Native_Richness
+
+#Brackish the most dominant species:======
+colCount_Brackish = colSums(BrackishVeg_Cover) #sum up the abundance column-wise
+topSp_Brackish = order(colCount_Brackish,decreasing=TRUE)[1] # 
+topSp_Brackish = names(BrackishVeg_Cover[topSp_Brackish]) # 
+topSp_Brackish #"Spar_patens"
+
+#Run PCoA:
+#  WEB >>>  https://www.davidzeleny.net/anadat-r/doku.php/en:pcoa_examples
+#use a PCoA  (principal coordinates analysis) rather than a PCA (Principal components analysis). With PCoA you can
+#use bray curtis dissimilarity (rather than only euclidean distance which is what PCA uses)
+Brackish_distance <- vegdist(Brackish.av.veg.native.good, "bray")#native veg matrix
+Brackish.pca <- cmdscale(Brackish_distance , eig = TRUE)
+names(Brackish.pca)#"points" "eig"    "x"      "ac"     "GOF" 
+ordiplot(Brackish.pca, display = 'sites', type = 'points',
+         cex = 2,bg="yellow")
+
+#Draw Ordination points:
+#Combine MDS PC and env data together:
+coordinates<-as.data.frame(Brackish.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
+Brackish_Data<-cbind(coordinates, Brackish.av.env)
+dim(Brackish_Data)#only 40 10
+
+#Standarize the variables so their effect size are comparable:
+Brackish_Data$TotRich <- scale (Brackish_Data$richness)
+Brackish_Data$NatRich <- scale (Brackish_Data$Native_Richness)
+Brackish_Data$Soil     <- scale (Brackish_Data$Mean_SoilSalinity)
+Brackish_Data$Water    <- scale (Brackish_Data$MeanWaterSalinity)
+Brackish_Data$Alien    <- scale (Brackish_Data$Introduced_Cover)
+Brackish_Data$Native   <- scale (Brackish_Data$Native_Cover)
+Brackish_Data$Composition <- scale (Brackish_Data$V1)
+Brackish_Data$Flood   <- scale (Brackish_Data$floodedpercent)
+Brackish_Data$Depth   <- scale (Brackish_Data$meanwaterdepthcm)
+
+#Vegan MDS in GGPLOT to see where weeds are most abundant:
+ggplot(data = Brackish_Data, aes(V1,V2,size = Introduced_Cover)) + geom_point() +
+  ggtitle("PCoA of Brackish Communities",subtitle = paste("averaged across 10 years, Top Alien = ", topSp_Brackish, sep = "")) +
+  xlab("X coordinate of PCoA")+ylab("Y coordinate of PCoA")+
+  theme(legend.position = "bottom")
+
+#Brackish SEM  with SOIL salinity =======
+model_Brackish  <- '
+#regressions:
+
+NatRich ~ Depth +Soil +Flood +Alien
+Composition ~ Depth + Flood + Soil + Alien
+Alien ~ Depth + Flood + Soil 
+
+
+#covariances:
+NatRich ~~ Composition
+'
+fit_Brackish <- sem(model_Brackish ,missing="direct",estimator="ML",data=Brackish_Data)
+summary(fit_Brackish , fit.measures=TRUE, rsquare=T) 
+
+#Design layout for our SemPath Diagram boxes:
+lay<-matrix(c(-0.5,  -0.5,
+              0.5,  -0.5,
+              0,    -0.3, #Alien Position
+             -0.5,   0.5,
+              0,     0.5,
+              0.5,   0.5), ncol=2,byrow=TRUE)
+
+#Extrat p-values to control edge.label.bg & edge.label.font in semPaths:
+Brackish_Pvalues<-parameterEstimates(fit_Brackish)#Thansk to WEB: http://lavaan.ugent.be/tutorial/inspect.html
+Brackish_Pvalues[1:13, "pvalue"]#First 13 values are for our regressions
+Brackish_SigData <- data.frame(Pvalue = Brackish_Pvalues[1:13, "pvalue"])#First 11 values are for our regressions
+Brackish_SigData
+Bold_Brackish_Sig <- as.integer(ifelse(Brackish_SigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
+Bold_Brackish_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
+Brackish_Label_bg <- ifelse(Brackish_SigData$Pvalue < 0.05 ,"yellow","white")# coding background labels
+
+#Run semPaths:
+par(mfrow = c(1,1))
+semPaths(fit_Brackish,"est", intercepts = F, fade = F, 
               title = T, edge.label.cex = 1.1,sizeMan = 8,
-              edge.label.position = 0.25, nCharNodes=0,
-              residuals =  F)
-     title("Brackish SEM (2007-2017)", line = 2)
-     
-     
-     model2a <- '
-     #regressions
-     Rich ~  Depth + Salt 
-     Comp ~  Depth + Salt 
-     
-     #covariances
-     Rich~~Comp
-     '
-     
-     fit2a <- sem(model2a,missing="direct",estimator="ML",data= veg.nmds_Brackish)
-     summary(fit2a, fit.measures=TRUE,rsquare=T) 
-     
-     par(mfrow = c(1,1))
-     semPaths(fit2a,
-              "est", intercepts = F, fade = F, 
-              title = T, edge.label.cex = 1.1,sizeMan = 8,
-              edge.label.position = 0.25, nCharNodes=0,
-              residuals =  F)
-     title("Brackish SEM (2007-2017), All p-values < 0.05", line = 2)
-     
-     #"Intermediate" Data ========
-     VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
-     IntermediateOnly <- VegAllEnvData[ VegAllEnvData$Community=="Intermediate",]
-     dim(IntermediateOnly)#now: 978 465
-     IntermediateOnly_Clean <- na.omit(IntermediateOnly)#rows with NA-s that need removing
-     IntermediateVeg_Cover<-subset(IntermediateOnly_Clean, select = Acer_rubrum:Ziza_miliacea)  #Intermediate veg cover data only
-     
-     #Create a StationFront-level Intermediate dataset (average over years)
-     Intermediate.soil <- subset(IntermediateOnly_Clean,
-                                 select = c(StationFront,Community,richness,Mean_SoilSalinity,
-                                            meanwaterdepthcm,floodedpercent,Acer_rubrum:Ziza_miliacea))
-     
-     Intermediate.av <-Intermediate.soil %>% na.omit() %>%
-       group_by(StationFront,Community)%>%
-       summarise_at(vars(richness:Ziza_miliacea),mean,na.rm=T) %>% na.omit()
-     
-     #Subset Veg matrix with no Phragmites:
-     Intermediate.av.veg <- subset( Intermediate.av, select =  Acer_rubrum:Ziza_miliacea)
-     Intermediate.av.veg.No.Phrag <- subset( Intermediate.av.veg, select = - Phraaust)
-     
-     #Subset Environ factors:
-     Intermediate.av.env <-  subset( Intermediate.av, select = c(Phraaust, Mean_SoilSalinity,
-                                                                 meanwaterdepthcm,floodedpercent,richness))
-     Intermediate.av.env$Phragmites <- ifelse(Intermediate.av.env$Phraaust == 0, "Absent","Present")
-     
-     #Compute MDS:
-     MDS_Intermediate <- metaMDS(Intermediate.av.veg.No.Phrag, distance = "bray")#computing distances for Path analysis
-     MDS_Intermediate$stress * 100 # =  20.41%.
-     plot(MDS_Intermediate$points[,1:2])
-     
-     coordinates_Intermediate<-as.data.frame(MDS_Intermediate$points[,1:2]) #get MDS1 (x-axis Comp value)
-     veg.nmds_Intermediate<-cbind(coordinates_Intermediate, Intermediate.av.env)
-     dim(veg.nmds_Intermediate)#59  rows of soil pore water data (Mean_SoilSalinity) is relatively small
-     
-     names(veg.nmds_Intermediate)#"MDS1","MDS2", "Phraaust","Mean_SoilSalinity","richness","Phragmites" 
-     veg.nmds_Intermediate$Rich <- scale (veg.nmds_Intermediate$richness)
-     veg.nmds_Intermediate$Salt <- scale (veg.nmds_Intermediate$Mean_SoilSalinity)
-     veg.nmds_Intermediate$Phra <- scale (veg.nmds_Intermediate$Phraaust)
-     veg.nmds_Intermediate$Comp <- scale (veg.nmds_Intermediate$MDS1)
-     veg.nmds_Intermediate$Flood<- scale (veg.nmds_Intermediate$floodedpercent)
-     veg.nmds_Intermediate$Depth<- scale (veg.nmds_Intermediate$meanwaterdepthcm)
-     
-     
-     #Compute coefficients for path analysis diagram:
-     Intermediate1 <- lm (Rich ~ Comp,   data = veg.nmds_Intermediate)
-     Intermediate2 <- lm (Comp~ Rich,    data = veg.nmds_Intermediate)
-     Intermediate3 <- lm (Phra ~ Depth,  data = veg.nmds_Intermediate)
-     Intermediate4 <- lm (Phra ~ Flood,  data = veg.nmds_Intermediate)
-     Intermediate5 <- lm (Phra ~ Salt ,  data = veg.nmds_Intermediate)
-     Intermediate6 <- lm (Comp ~ Phra,   data = veg.nmds_Intermediate)
-     Intermediate7 <- lm (Rich~ Phra,    data = veg.nmds_Intermediate)
-     Intermediate8 <- lm (Comp ~ Depth,  data = veg.nmds_Intermediate)
-     Intermediate9 <- lm (Comp ~ Flood,  data = veg.nmds_Intermediate)
-     Intermediate10<- lm (Comp ~ Salt ,  data = veg.nmds_Intermediate)
-     
-     IntermediateSigData <- data.frame(Pvalue = c(summary(Intermediate1)$coefficients[2,4],
-                                                  summary(Intermediate2)$coefficients[2,4],
-                                                  summary(Intermediate3)$coefficients[2,4],
-                                                  summary(Intermediate4)$coefficients[2,4],
-                                                  summary(Intermediate5)$coefficients[2,4],
-                                                  summary(Intermediate6)$coefficients[2,4],
-                                                  summary(Intermediate7)$coefficients[2,4],
-                                                  summary(Intermediate8)$coefficients[2,4],
-                                                  summary(Intermediate9)$coefficients[2,4],
-                                                  summary(Intermediate10)$coefficients[2,4]))
-     
-     
-     IntermediateSigData 
-     Bold_Intermediate_Sig <- as.integer(ifelse(IntermediateSigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
-     Bold_Intermediate_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
-     
-     #ly is a pre-designed layout for our SemPath Diagram boxes:
-     lay<-matrix(c(-0.5,  -0.5,
-                   0.5,  -0.5,
-                   -0.5,   0.5,
-                   0,  -0.3,
-                   0,   0.5,
-                   0.5,   0.5), ncol=2,byrow=TRUE)
-     #Set groups for coloring, if legend = TRUE it will be displayed on the right:
-     grps<-list(Abiotic=c("Depth","Salt","Flood"),Invasive_Phragmites=c("Phra"), Composition = c("Comp","Rich"))
-     
-     #ALL IN:
-     par(mfrow = c(1,1))
-     semPaths(Intermediate1 +Intermediate2 +Intermediate3+ Intermediate4 +Intermediate5 +Intermediate6+
-                Intermediate7  +Intermediate8 + Intermediate9 + Intermediate10 ,
-              "est", intercepts = F, fade = F,  edge.label.font = Bold_Intermediate_Sig,
-              title = T, edge.label.cex = 1.4,layout = lay,
-              color=c("lightblue","green","lightgreen"),groups=grps,
-              sizeMan = 12, nCharNodes=0, asize = 5,legend=FALSE,
-              edge.label.position = 0.3)
-     title("Intermediate (2007-2017)", line = 2)
-     
-     #Check the distribution of residuals:
-     par(mfrow = c(2,5))
-     plot(Intermediate1, which = 1, main = "Intermediate1 = lm (Rich ~ Comp)" )
-     plot(Intermediate2, which = 1, main = "Intermediate2 = lm (Comp ~ Rich)" )
-     plot(Intermediate3, which = 1, main = "Intermediate3 = lm (Phra ~ Depth)" )
-     plot(Intermediate4, which = 1, main = "Intermediate4 = lm (Phra ~ Flood)" )
-     plot(Intermediate5, which = 1, main = "Intermediate5 = lm (Phra ~ Salt)" )
-     plot(Intermediate6, which = 1, main = "Intermediate6 = lm (Comp ~ Phra)" )
-     plot(Intermediate7, which = 1, main = "Intermediate7 = lm (Rich ~ Phra)" )
-     plot(Intermediate8, which = 1, main = "Intermediate8 = lm (Comp ~ Depth)" )
-     plot(Intermediate9, which = 1, main = "Intermediate9 = lm (Comp ~ Flood)" )
-     plot(Intermediate10, which = 1, main = "Intermediate10 = lm (Comp ~ Salt)" )
-     
-     #Vegan MDS in GGPLOT:
-     ggplot(data = veg.nmds_Intermediate, aes(MDS1, MDS2,color = Phragmites)) + geom_point(size=4) +
-       ggtitle("NMDS of Intermediate Communities",subtitle = "averaged across 10 years")
-     
-     #SEM Intermediate=========
-     model3 <- '
-     #regressions
-     Phra ~ Depth + Salt + Flood
-     Rich ~ Phra + Depth + Salt + Flood
-     Comp ~ Phra + Depth + Salt + Flood
-     
-     #covariances
-     Rich~~Comp
-     '
-     
-     fit3 <- sem(model3,missing="direct",estimator="ML",data=veg.nmds_Intermediate)
-     summary(fit3, fit.measures=TRUE,rsquare=T) 
-     
-     par(mfrow = c(1,1))
-     semPaths(fit3,
-              "est", intercepts = F, fade = F, 
-              title = T, edge.label.cex = 1.1,sizeMan = 8,
-              edge.label.position = 0.25, nCharNodes=0,
-              residuals =  F)
-     title("Intermediate SEM (2007-2017)", line = 2)
-     
-     
-     model3a <- '
-     #regressions
-     Rich ~ Phra  + Salt 
-     Comp ~ Phra + Salt 
-     #covariances
-     Rich~~Comp
-     '
-     
-     fit3a <- sem(model3a,missing="direct",estimator="ML",data= veg.nmds_Intermediate)
-     summary(fit3a, fit.measures=TRUE,rsquare=T) 
-     
-     par(mfrow = c(1,1))
-     semPaths(fit3a, 
-              "est", intercepts = F, fade = F, 
-              title = T, edge.label.cex = 1.1,sizeMan = 8,
-              edge.label.position = 0.25, nCharNodes=0,
-              residuals =  F)
-     title("Intermediate SEM (2007-2017), All p-values < 0.05", line = 2)
-     
-     
-     
-     #"Saline" Data ========
-     VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
-     SalineOnly <- VegAllEnvData[ VegAllEnvData$Community=="Saline",]
-     dim(SalineOnly)#now: 660 465
-     SalineOnly_Clean <- na.omit(SalineOnly)#rows with NA-s that need removing
-     SalineVeg_Cover<-subset(SalineOnly_Clean, select = Acer_rubrum:Ziza_miliacea)  #Saline veg cover data only
-     
-     #Create a StationFront-level Saline dataset (average over years)
-     Saline.soil <- subset(SalineOnly_Clean,
-                           select = c(StationFront,Community,richness,Mean_SoilSalinity,
-                                      meanwaterdepthcm,floodedpercent,Acer_rubrum:Ziza_miliacea))
-     
-     Saline.av <-Saline.soil %>% na.omit() %>%
-       group_by(StationFront,Community)%>%
-       summarise_at(vars(richness:Ziza_miliacea),mean,na.rm=T) %>% na.omit()
-     
-     #Subset Veg matrix with no Phragmites:
-     Saline.av.veg <- subset( Saline.av, select =  Acer_rubrum:Ziza_miliacea)
-     Saline.av.veg.No.Phrag <- subset( Saline.av.veg, select = - Phraaust)
-     
-     #Subset Environ factors:
-     Saline.av.env <-  subset( Saline.av, select = c(Phraaust, Mean_SoilSalinity,
-                                                     meanwaterdepthcm,floodedpercent,richness))
-     Saline.av.env$Phragmites <- ifelse(Saline.av.env$Phraaust == 0, "Absent","Present")
-     
-     #Compute MDS:
-     MDS_Saline <- metaMDS(Saline.av.veg.No.Phrag, distance = "bray")#computing distances for Path analysis
-     MDS_Saline$stress * 100 # =  16.08%.
-     plot(MDS_Saline$points[,1:2])
-     
-     coordinates_Saline<-as.data.frame(MDS_Saline$points[,1:2]) #get MDS1 (x-axis Comp value)
-     veg.nmds_Saline<-cbind(coordinates_Saline, Saline.av.env)
-     dim(veg.nmds_Saline)#63  6 = only 41 rows a soil pore water data (Mean_SoilSalinity) is relatively small
-     
-     names(veg.nmds_Saline)#"MDS1","MDS2", "Phraaust","Mean_SoilSalinity","richness","Phragmites" 
-     #Standardize all variables using scale function:
-     veg.nmds_Saline$Rich <- scale (veg.nmds_Saline$richness)
-     veg.nmds_Saline$Salt <- scale (veg.nmds_Saline$Mean_SoilSalinity)
-     veg.nmds_Saline$Phra <- scale (veg.nmds_Saline$Phraaust)
-     veg.nmds_Saline$Comp <- scale (veg.nmds_Saline$MDS1)
-     veg.nmds_Saline$Flood<- scale (veg.nmds_Saline$floodedpercen)
-     veg.nmds_Saline$Depth<- scale (veg.nmds_Saline$meanwaterdepthcm)
-     
-     
-     #Compute coefficients for path analysis diagram:
-     Saline1 <- lm (Rich ~ Comp,   data = veg.nmds_Saline)
-     Saline2 <- lm (Comp~ Rich,    data = veg.nmds_Saline)
-     Saline3 <- lm (Phra ~ Depth,  data = veg.nmds_Saline)
-     Saline4 <- lm (Phra ~ Flood,  data = veg.nmds_Saline)
-     Saline5 <- lm (Phra ~ Salt ,  data = veg.nmds_Saline)
-     Saline6 <- lm (Comp ~ Phra,   data = veg.nmds_Saline)
-     Saline7 <- lm (Rich~ Phra,    data = veg.nmds_Saline)
-     Saline8 <- lm (Comp ~ Depth,  data = veg.nmds_Saline)
-     Saline9 <- lm (Comp ~ Flood,  data = veg.nmds_Saline)
-     Saline10<- lm (Comp ~ Salt ,  data = veg.nmds_Saline)
-     
-     SalineSigData <- data.frame(Pvalue = c(summary(Saline1)$coefficients[2,4],
-                                            summary(Saline2)$coefficients[2,4],
-                                            summary(Saline3)$coefficients[2,4],
-                                            summary(Saline4)$coefficients[2,4],
-                                            summary(Saline5)$coefficients[2,4],
-                                            summary(Saline6)$coefficients[2,4],
-                                            summary(Saline7)$coefficients[2,4],
-                                            summary(Saline8)$coefficients[2,4],
-                                            summary(Saline9)$coefficients[2,4],
-                                            summary(Saline10)$coefficients[2,4]))
-     
-     
-     SalineSigData 
-     Bold_Saline_Sig <- as.integer(ifelse(SalineSigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
-     Bold_Saline_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
-     
-     #ly is a pre-designed layout for our SemPath Diagram boxes:
-     lay<-matrix(c(-0.5,  -0.5,
-                   0.5,  -0.5,
-                   -0.5,   0.5,
-                   0,  -0.3,
-                   0,   0.5,
-                   0.5,   0.5), ncol=2,byrow=TRUE)
-     plot(lay)
-     #Set groups for coloring, if legend = TRUE it will be displayed on the right:
-     grps<-list(Abiotic=c("Depth","Salt","Flood"),Invasive_Phragmites=c("Phra"), Composition = c("Comp","Rich"))
-     
-     #ALL IN:
-     par(mfrow = c(1,1))
-     semPaths(Saline1 +Saline2 +Saline3+ Saline4 +Saline5 +Saline6+
-                Saline7  +Saline8 + Saline9 + Saline10 ,
-              "est", intercepts = F, fade = F,  edge.label.font = Bold_Saline_Sig,
-              title = T, edge.label.cex = 1.4,layout = lay,
-              color=c("lightblue","green","lightgreen"),groups=grps,
-              sizeMan = 12, nCharNodes=0, asize = 5,legend=FALSE,
-              edge.label.position = 0.3)
-     title("Saline (2007-2017)", line = 2)
-     
-     
-     #Check the distribution of residuals:
-     par(mfrow = c(2,5))
-     plot(Saline1, which = 1, main = "Saline1 = lm (Rich ~ Comp)" )
-     plot(Saline2, which = 1, main = "Saline2 = lm (Comp ~ Rich)" )
-     plot(Saline3, which = 1, main = "Saline3 = lm (Phra ~ Depth)" )
-     plot(Saline4, which = 1, main = "Saline4 = lm (Phra ~ Flood)" )
-     plot(Saline5, which = 1, main = "Saline5 = lm (Phra ~ Salt)" )
-     plot(Saline6, which = 1, main = "Saline6 = lm (Comp ~ Phra)" )
-     plot(Saline7, which = 1, main = "Saline7 = lm (Rich ~ Phra)" )
-     plot(Saline8, which = 1, main = "Saline8 = lm (Comp ~ Depth)" )
-     plot(Saline9, which = 1, main = "Saline9 = lm (Comp ~ Flood)" )
-     plot(Saline10, which = 1, main = "Saline10 = lm (Comp ~ Salt)" )
-     
-     #Vegan MDS in GGPLOT:
-     ggplot(data = veg.nmds_Saline, aes(MDS1, MDS2,color = Phragmites)) + geom_point(size=4) +
-       ggtitle("NMDS of Saline Communities",subtitle = "averaged across 10 years")
-     
-     
-     #SEM Saline=========
-     model4 <- '
-     #regressions
-     Phra ~ Depth + Salt + Flood
-     Rich ~ Phra + Depth + Salt + Flood
-     Comp ~ Phra + Depth + Salt + Flood
-     
-     #covariances
-     Rich~~Comp
-     '
-     
-     fit4 <- sem(model4,missing="direct",estimator="ML",data=veg.nmds_Saline)
-     summary(fit4, fit.measures=TRUE,rsquare=T) 
-     
-     par(mfrow = c(1,1))
-     semPaths(fit4,
-              "est", intercepts = F, fade = F, 
-              title = T, edge.label.cex = 1.1,sizeMan = 8,
-              edge.label.position = 0.25, nCharNodes=0,
-              residuals =  F)
-     title("Saline SEM (2007-2017)", line = 2)
-     
-     
-     model4a <- '
-     #regressions
-     Rich ~  Depth + Salt 
-     Comp ~   Salt 
-     
-     #covariances
-     Rich~~Comp
-     '
-     
-     fit4a <- sem(model4a, missing="direct",estimator="ML",data= veg.nmds_Saline)
-     summary(fit4a, fit.measures=TRUE,rsquare=T) 
-     
-     par(mfrow = c(1,1))
-     semPaths(fit4a,
-              "est", intercepts = F, fade = F, 
-              title = T, edge.label.cex = 1.1,sizeMan = 8,
-              edge.label.position = 0.25, nCharNodes=0,
-              residuals =  F)
-     title("Saline SEM (2007-2017), All p-values < 0.05", line = 2)
-     
-     
-     
-     
-     
-     
-     
+              edge.label.position = 0.25, nCharNodes=6,
+              residuals =  F, exoCov = F,
+              layout = lay,
+              edge.label.font = Bold_Brackish_Sig,
+              edge.label.bg = Brackish_Label_bg,
+              label.font = 2 )#nodes font, 2 = bold
+title("Brackish path analysis (2007-2017)", line = 1) # To save use: filetype = "jpg",filename = "SEM_Brackish2018")
+
+
+
+
+
+#"Intermediate" Data ========
+VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
+Intermediate_Only <- VegAllEnvData[ VegAllEnvData$Community=="Intermediate",]
+dim(Intermediate_Only)#now: 978 470
+Intermediate_Only_Clean <- na.omit(Intermediate_Only)#rows with NA-s that need removing
+IntermediateVeg_Cover<-subset(Intermediate_Only_Clean, select = Acer_rubrum:Ziza_miliacea)  #Intermediate veg cover data only
+dim(IntermediateVeg_Cover)# 388 453
+
+#Create a StationFront-level Intermediate dataset (average over years)
+Intermediate.soil <- subset(Intermediate_Only_Clean,
+                        select = c(StationFront,Community,richness,Mean_SoilSalinity,
+                                   meanwaterdepthcm,floodedpercent,
+                                   MeanWaterSalinity, Acer_rubrum:Ziza_miliacea))
+
+#Compute mean covers per Station, all years:
+Intermediate.av <-Intermediate.soil %>% na.omit() %>%
+  group_by(StationFront,Community)%>%
+  summarise_at(vars(richness:Ziza_miliacea),mean,na.rm=T)# %>% na.omit()
+dim(Intermediate.av)# 59 460
+
+#Subset native/introduced Veg matrix:
+#ID and remove the most dominant weed from veg matrix:
+#join Intermediate_Plants & Plant_List to see which species are invasive:
+Plant_List <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018
+str(Plant_List)#data.frame':	3454 obs. of  6 variables:
+Plant_List<- subset(Plant_List, select = c(specCode, nat))
+
+colCount_Intermediate = colSums(IntermediateVeg_Cover) #sum up the abundance column-wise
+topID_Intermediate = order(colCount_Intermediate,decreasing=TRUE)[1:length(IntermediateVeg_Cover)] # choose all Intermediate plant species
+topID_Intermediate = names(IntermediateVeg_Cover[topID]) # names of plant species in decreasing order
+Intermediate_Plant_Sp <- data.frame( specCode = topID_Intermediate)
+Intermediate_Plants <- left_join(Intermediate_Plant_Sp,Plant_List, by = "specCode")
+head(Intermediate_Plants)
+
+#Subset native only
+Intermediate_Native.Species <- filter(Intermediate_Plants, nat == "native")
+Intermediate_Native.Species #346
+#Select natives only from Intermediate.av:
+Intermediate.av.veg.native <- subset( Intermediate.av, select = unique(Intermediate_Native.Species$specCode))
+dim(Intermediate.av.veg.native)#59 346
+range (colSums(Intermediate.av.veg.native))# 0.0000 711.6422
+Intermediate.av.veg.native.total <- rowSums (Intermediate.av.veg.native) #create extra column with total cover of all natives
+
+#Zero colums need to be removed prior ordinations: 
+Intermediate.av.veg.native.good<- Intermediate.av.veg.native [ , colSums(Intermediate.av.veg.native) > 0]
+dim(Intermediate.av.veg.native.good)#  41 73
+
+#Subset introduced only:
+Intermediate_introduced.Species <- filter(Intermediate_Plants, nat == "introduced")
+Intermediate_introduced.Species #43
+Intermediate.av.veg.introduced <- subset( Intermediate.av, select = unique(Intermediate_introduced.Species$specCode))
+dim(Intermediate.av.veg.introduced)#40 43
+range(Intermediate.av.veg.introduced)#0.000000 3.071408
+Intermediate.av.veg.introduced.total <- rowSums (Intermediate.av.veg.introduced)#Extra column = total cover of introduced species per site
+
+#Subset Environ factors:
+Intermediate.av.env <-  subset( Intermediate.av, select = c( Mean_SoilSalinity,meanwaterdepthcm,
+                                                     MeanWaterSalinity,floodedpercent,richness))
+Intermediate.av.env$Introduced_Cover <- Intermediate.av.veg.introduced.total
+Intermediate.av.env$Native_Cover <- Intermediate.av.veg.native.total
+
+
+#Intermediate the most dominant species:======
+colCount_Intermediate = colSums(IntermediateVeg_Cover) #sum up the abundance column-wise
+topSp_Intermediate = order(colCount_Intermediate,decreasing=TRUE)[1] # 
+topSp_Intermediate = names(IntermediateVeg_Cover[topSp_Intermediate]) # 
+topSp_Intermediate #"Spar_patens"
+
+#Run PCoA:
+#  WEB >>>  https://www.davidzeleny.net/anadat-r/doku.php/en:pcoa_examples
+#use a PCoA  (principal coordinates analysis) rather than a PCA (Principal components analysis). With PCoA you can
+#use bray curtis dissimilarity (rather than only euclidean distance which is what PCA uses)
+Intermediate_distance <- vegdist(Intermediate.av.veg.native.good, "bray")
+Intermediate.pca <- cmdscale(Intermediate_distance , eig = TRUE)
+names(Intermediate.pca)#"points" "eig"    "x"      "ac"     "GOF" 
+ordiplot(Intermediate.pca, display = 'sites', type = 'points',
+         cex = 2,bg="yellow")
+
+#Draw Ordination points:
+#Combine MDS PC and env data together:
+coordinates<-as.data.frame(Intermediate.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
+Intermediate_Data<-cbind(coordinates, Intermediate.av.env)
+dim(Intermediate_Data)#only 41 9
+
+#Standarize the variables so their effect size are comparable:
+Intermediate_Data$Richness <- scale (Intermediate_Data$richness)
+Intermediate_Data$Soil <- scale (Intermediate_Data$Mean_SoilSalinity)
+Intermediate_Data$Water <- scale (Intermediate_Data$MeanWaterSalinity)
+Intermediate_Data$Alien <- scale (Intermediate_Data$Introduced_Cover)
+Intermediate_Data$Native <- scale (Intermediate_Data$Native_Cover)
+Intermediate_Data$Composition <- scale (Intermediate_Data$V1)
+Intermediate_Data$Flood<- scale (Intermediate_Data$floodedpercent)
+Intermediate_Data$Depth<- scale (Intermediate_Data$meanwaterdepthcm)
+
+#Vegan MDS in GGPLOT to see where weeds are most abundant:
+ggplot(data = Intermediate_Data, aes(V1,V2,size = Introduced_Cover)) + geom_point() +
+  ggtitle("PCoA of Intermediate Communities",subtitle = paste("averaged across 10 years, Top Alien = ", topSp_Intermediate, sep = "")) +
+  xlab("X coordinate of PCoA")+ylab("Y coordinate of PCoA")+
+  theme(legend.position = "bottom")
+
+#Intermediate SEM  with SOIL salinity =======
+model_Intermediate  <- '
+#regressions:
+
+Richness ~ Depth +Soil +Flood +Alien
+Composition ~ Depth + Flood + Soil + Alien
+Alien ~ Depth + Flood + Soil 
+
+
+#covariances:
+Richness ~~ Composition
+'
+fit_Intermediate <- sem(model_Intermediate ,missing="direct",estimator="ML",data=Intermediate_Data)
+summary(fit_Intermediate , fit.measures=TRUE, rsquare=T) 
+
+#Design layout for our SemPath Diagram boxes:
+lay<-matrix(c(-0.5,  -0.5,
+              0.5,  -0.5,
+              0,    -0.3, #Alien Position
+              -0.5,   0.5,
+              0,     0.5,
+              0.5,   0.5), ncol=2,byrow=TRUE)
+
+#Extrat p-values to control edge.label.bg & edge.label.font in semPaths:
+Intermediate_Pvalues<-parameterEstimates(fit_Intermediate)#Thansk to WEB: http://lavaan.ugent.be/tutorial/inspect.html
+Intermediate_Pvalues[1:13, "pvalue"]#First 13 values are for our regressions
+Intermediate_SigData <- data.frame(Pvalue = Intermediate_Pvalues[1:13, "pvalue"])#First 11 values are for our regressions
+Intermediate_SigData
+Bold_Intermediate_Sig <- as.integer(ifelse(Intermediate_SigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
+Bold_Intermediate_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
+Intermediate_Label_bg <- ifelse(Intermediate_SigData$Pvalue < 0.05 ,"yellow","white")# coding background labels
+
+#Run semPaths:
+par(mfrow = c(1,1))
+semPaths(fit_Intermediate,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.1,sizeMan = 8,
+         edge.label.position = 0.25, nCharNodes=6,
+         residuals =  F, exoCov = F,
+         layout = lay,
+         edge.label.font = Bold_Intermediate_Sig,
+         edge.label.bg = Intermediate_Label_bg,
+         label.font = 2 ) #nodes font, 2 = bold
+title("Intermediate path analysis (2007-2017)", line = 1) # To save use: filetype = "jpg",filename = "SEM_Intermediate2018")
+
+#"Saline" Data ========
+VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
+Saline_Only <- VegAllEnvData[ VegAllEnvData$Community=="Saline",]
+dim(Saline_Only)#now: 608 470
+Saline_Only_Clean <- na.omit(Saline_Only)#rows with NA-s that need removing
+SalineVeg_Cover<-subset(Saline_Only_Clean, select = Acer_rubrum:Ziza_miliacea)  #Saline veg cover data only
+dim(SalineVeg_Cover)# 284 453
+
+#Create a StationFront-level Saline dataset (average over years)
+Saline.soil <- subset(Saline_Only_Clean,
+                      select = c(StationFront,Community,richness,Mean_SoilSalinity,
+                                 meanwaterdepthcm,floodedpercent,
+                                 MeanWaterSalinity, Acer_rubrum:Ziza_miliacea))
+
+#Compute mean covers per Station, all years:
+Saline.av <-Saline.soil %>% na.omit() %>%
+  group_by(StationFront,Community)%>%
+  summarise_at(vars(richness:Ziza_miliacea),mean,na.rm=T)# %>% na.omit()
+dim(Saline.av)# 40 460
+
+#Subset native/introduced Veg matrix:
+#ID and remove the most dominant weed from veg matrix:
+#join Saline_Plants & Plant_List to see which species are invasive:
+Plant_List <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018
+str(Plant_List)#data.frame':	3454 obs. of  6 variables:
+Plant_List<- subset(Plant_List, select = c(specCode, nat))
+
+colCount = colSums(SalineVeg_Cover) #sum up the abundance column-wise
+topID = order(colCount,decreasing=TRUE)[1:length(SalineVeg_Cover)] # choose all Saline plant species
+topID = names(SalineVeg_Cover[topID]) # names of plant species in decreasing order
+Saline_Plant_Sp <- data.frame( specCode = topID)
+Saline_Plant_Sp
+Saline_Plants <- left_join(Saline_Plant_Sp,Plant_List, by = "specCode")
+head(Saline_Plants)
+
+#Subset native only
+Saline_Native.Species <- filter(Saline_Plants, nat == "native")
+Saline_Native.Species #346
+#Select natives only from Saline.av:
+Saline.av.veg.native <- subset( Saline.av, select = unique(Saline_Native.Species$specCode))
+dim(Saline.av.veg.native)#40 346
+range (colSums(Saline.av.veg.native))# 0.0000 711.6422
+Saline.av.veg.native.total <- rowSums (Saline.av.veg.native) #create extra column with total cover of all natives
+
+#Zero colums need to be removed prior ordinations: 
+Saline.av.veg.native.good<- Saline.av.veg.native [ , colSums(Saline.av.veg.native) > 0]
+dim(Saline.av.veg.native.good)#  41 73
+
+#Subset introduced only:
+Saline_introduced.Species <- filter(Saline_Plants, nat == "introduced")
+Saline_introduced.Species #43
+Saline.av.veg.introduced <- subset( Saline.av, select = unique(Saline_introduced.Species$specCode))
+dim(Saline.av.veg.introduced)#40 43
+range(Saline.av.veg.introduced)#0.000000 3.071408
+Saline.av.veg.introduced.total <- rowSums (Saline.av.veg.introduced)#Extra column = total cover of introduced species per site
+
+#Subset Environ factors:
+Saline.av.env <-  subset( Saline.av, select = c( Mean_SoilSalinity,meanwaterdepthcm,
+                                                 MeanWaterSalinity,floodedpercent,richness))
+Saline.av.env$Introduced_Cover <- Saline.av.veg.introduced.total
+Saline.av.env$Native_Cover <- Saline.av.veg.native.total
+
+
+#Saline the most dominant species:======
+colCount_Saline = colSums(SalineVeg_Cover) #sum up the abundance column-wise
+topSp_Saline = order(colCount_Saline,decreasing=TRUE)[1] # 
+topSp_Saline = names(SalineVeg_Cover[topSp_Saline]) # 
+topSp_Saline #"Spar_patens"
+
+#Run PCoA:
+#  WEB >>>  https://www.davidzeleny.net/anadat-r/doku.php/en:pcoa_examples
+#use a PCoA  (principal coordinates analysis) rather than a PCA (Principal components analysis). With PCoA you can
+#use bray curtis dissimilarity (rather than only euclidean distance which is what PCA uses)
+Saline_distance <- vegdist(Saline.av.veg.native.good, "bray")
+Saline.pca <- cmdscale(Saline_distance , eig = TRUE)
+names(Saline.pca)#"points" "eig"    "x"      "ac"     "GOF" 
+ordiplot(Saline.pca, display = 'sites', type = 'points',
+         cex = 2,bg="yellow")
+
+#Draw Ordination points:
+#Combine MDS PC and env data together:
+coordinates<-as.data.frame(Saline.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
+Saline_Data<-cbind(coordinates, Saline.av.env)
+dim(Saline_Data)#only 41 9
+
+#Standarize the variables so their effect size are comparable:
+Saline_Data$Richness <- scale (Saline_Data$richness)
+Saline_Data$Soil <- scale (Saline_Data$Mean_SoilSalinity)
+Saline_Data$Water <- scale (Saline_Data$MeanWaterSalinity)
+Saline_Data$Alien <- scale (Saline_Data$Introduced_Cover)
+Saline_Data$Native <- scale (Saline_Data$Native_Cover)
+Saline_Data$Composition <- scale (Saline_Data$V1)
+Saline_Data$Flood<- scale (Saline_Data$floodedpercent)
+Saline_Data$Depth<- scale (Saline_Data$meanwaterdepthcm)
+
+#Vegan MDS in GGPLOT to see where weeds are most abundant:
+ggplot(data = Saline_Data, aes(V1,V2,size = Introduced_Cover)) + geom_point() +
+  ggtitle("PCoA of Saline Communities",subtitle = paste("averaged across 10 years, Top Alien = ", topSp_Saline, sep = "")) +
+  xlab("X coordinate of PCoA")+ylab("Y coordinate of PCoA")+
+  theme(legend.position = "bottom")
+
+#Saline SEM  with SOIL salinity =======
+model_Saline  <- '
+#regressions:
+
+Richness ~ Depth +Soil +Flood +Alien
+Composition ~ Depth + Flood + Soil + Alien
+Alien ~ Depth + Flood + Soil 
+
+
+#covariances:
+Richness ~~ Composition
+'
+fit_Saline <- sem(model_Saline ,missing="direct",estimator="ML",data=Saline_Data)
+summary(fit_Saline , fit.measures=TRUE, rsquare=T) 
+
+#Design layout for our SemPath Diagram boxes:
+lay<-matrix(c(-0.5,  -0.5,
+              0.5,  -0.5,
+              0,    -0.3, #Alien Position
+              -0.5,   0.5,
+              0,     0.5,
+              0.5,   0.5), ncol=2,byrow=TRUE)
+
+#Extract p-values to control edge.label.bg & edge.label.font in semPaths:
+Saline_Pvalues<-parameterEstimates(fit_Saline)#Thansk to WEB: http://lavaan.ugent.be/tutorial/inspect.html
+Saline_Pvalues[1:13, "pvalue"]#First 13 values are for our regressions
+Saline_SigData <- data.frame(Pvalue = Saline_Pvalues[1:13, "pvalue"])#First 11 values are for our regressions
+Saline_SigData
+Bold_Saline_Sig <- as.integer(ifelse(Saline_SigData$Pvalue < 0.05 ,2,1))#Set bold(2) if P< 0.05, otherwise = 1
+Bold_Saline_Sig #values #for edge.label.font, 11 models to define which effects are significant (2=bold):
+Saline_Label_bg <- ifelse(Saline_SigData$Pvalue < 0.05 ,"yellow","white")# coding background labels
+
+#Run semPaths:
+par(mfrow = c(1,1))
+semPaths(fit_Saline,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.1,sizeMan = 8,
+         edge.label.position = 0.25, nCharNodes=6,
+         residuals =  F, exoCov = F,
+         layout = lay,
+         edge.label.font = Bold_Saline_Sig,
+         edge.label.bg = Saline_Label_bg,
+         label.font = 2 ) #nodes font, 2 = bold
+title("Saline path analysis (2007-2017)", line = 1) # To save use: filetype = "jpg",filename = "SEM_Saline2018")
+
+
+
+
+
+
+
+
+
+         
+        
+         
+         
+         
