@@ -11,7 +11,7 @@ crms1<- crms %>% select (Station.ID, Collection.Date..mm.dd.yyyy.,
                          Scientific.Name.As.Currently.Recognized,
                          In.Out,Comments) %>%
   rename(StationID = Station.ID, CollectionDate = Collection.Date..mm.dd.yyyy.,
-         CoverTotal = X..Cover,
+         Cover = X..Cover,
          SpName = Scientific.Name.As.Currently.Recognized)
                            
 #Replace all special character in SpName with nothing:======
@@ -25,7 +25,7 @@ unique(crms1a$SpName)
 crms2<-crms1a %>% separate(col = CollectionDate ,
                           into=c("month","day","year"),sep="/",
                           remove = F)
-
+dim(crms2) #325609     11
 #Select time and veg set you want to work with:======
 crms3 <- filter(crms2,  year < 2018  &  year > 2006,
                 Vegetation.Type == "Natural")
@@ -40,11 +40,13 @@ sum(i1==TRUE)#964 plots with comment on estimated Phragmites cover as the sites 
 crms3$Category <- i1 
 crms3$Category2 <- ifelse(crms3$Category==TRUE, "PhragInComment", "NA") #estra column to keep track of what TRUE means
 crms3$In.Out[crms3$Category== TRUE] <- "Both" #we need to change In.Out to Both to keep this record.
+#substitute - for _ so it is R-friendly:
+crms3$StationID<-as.factor(sub("-","_",crms3$StationID))
 
 #Keep "Out" out: Column In.Out assigns IN/OUT/BOTH categories to all species.
 #If a species occurs both IN and OUT of a plot, it is recorded as BOTH. 
 #If a species is rooted OUT of the plot, but is hanging over the plot, it is also recorded as BOTH.
-#CoverTotal measures the cover within the quadrat only. Out-records contain to CoverTotal value.
+#Cover measures the cover within the quadrat only. Out-records add to CoverTotal value.
 
 crms4 <- filter(crms3, In.Out != "Out")
 dim(crms4) #192369     13
@@ -58,7 +60,7 @@ crms5 <- crms4  %>% separate(col = SpName, into = c("genus", "species", "extra_s
 #Cut 4 letters of genus and 11 of species and turn into specCode (Vegan-friendly):
 crms6 <- crms5 %>% mutate(spec = strtrim(genus, 4), Code = strtrim(species, 11)) %>%
   unite(specCode, spec, Code, sep = "_") %>%
-  select( StationID, day, month, year, Community, CoverTotal, Category2,SpName, genus, species, specCode)%>%
+  select( StationID, day, month, year, Community, Cover, Category2,SpName, genus, species, specCode) %>%
   mutate (StationID.year = interaction(StationID,year),
           genus.species  = interaction(genus,species)) #extra column
 dim(crms6)# 192369      13
@@ -71,59 +73,95 @@ crms7$i <- 1:nrow(crms7)#assign id to each row to make "spread" function work sm
 dim(crms7)#  192369     14
 
 #Remove Swamp Comunities 
-#Mutate CoverTotal (<1 and Solitary) to numeric value:
+#Mutate Cover (<1 and Solitary) to numeric value:
 #Replace "<1" with 0.5 and "Solitary" with 0.1 (CPRA-recommended)
 
 crms8  <-   filter(crms7, Community !="Swamp") %>%
-  mutate(CoverTotal = recode(CoverTotal, "<1" = "0.5")) %>%
-  mutate(CoverTotal = recode(CoverTotal, "Solitary" = "0.1"))
+  mutate(Cover = recode(Cover, "<1" = "0.5")) %>%
+  mutate(Cover = recode(Cover, "Solitary" = "0.1"))
 
-sum(is.na(crms8$CoverTotal))#Double check if NA-s produced = 0, If NA-s turn them to 0= is.na(crms8$CoverTotal) <-0
+sum(is.na(crms8$Cover))#Double check if NA-s produced = 0, If NA-s turn them to 0= is.na(crms8$Cover) <-0
 dim(crms8)#160691     14
 
 #Turn factors into numeric values and characters into factors:=====
-crms8$CoverTotal <- as.numeric(as.character(crms8$CoverTotal))
+crms8$Cover <- as.numeric(as.character(crms8$Cover))
 crms8$Community <- factor(crms8$Community)
 crms8$specCode <- factor(crms8$specCode)
+crms8$StationID <- factor(crms8$StationID)
+crms8$year<- factor(crms8$year)
+crms8$specCode<- factor(crms8$specCode)
+str(crms8)
+
 length(unique(crms8$specCode))#455
 (unique(crms8$specCode))
 
 #Spread specCode into columns (produce final Veg matrix):=====
 crms8$specCode <- factor(crms8$specCode)#to remove empty levels.
-crms8a <- select(crms8, - c(genus, species, genus.species, Category2))
 
 #Check if specCode-s duplicate (the same specCode assigned to different species)====
 #It should be 455 rows of specCodes:
+crms8a <- select(crms8, - c(genus, species, genus.species, Category2))
 sp <- crms8a %>% 
   group_by(specCode, SpName) %>%
-  summarise(n=n())
-str(sp) #YAY!!!  sp$ specCode     : Factor w/ 451 levels
-#Save crms8 for joining species names with trait data:
-#write.csv(sp, file = "CRMS_Marsh_Veg_SpeciesList.csv" )
+  summarise(n=n()) %>% distinct()
+str(sp) # sp$ specCode     : Factor w/ 455 levels
 #Check if any specCode is duplicated:
 spCode <- as.data.frame(sp$specCode)
 specCode_duplicated <- spCode[duplicated(spCode),]
 specCode_duplicated #Ludw_grandiflora and  Phra_australis but these look OK!
 #Ludwigia grandiflora Michx Greuter  Burdet versus Ludwigia grandiflora Michx Greuter  Burdet ssp hexapetala Hook  Arn GL Nesom  Kartesz
 #Phragmites australis Cav Trin ex Steud versus Phragmites australis Cav Trin ex Steud ssp australis
+#Merge these two species together using mean.
+duplicated(sp$specCode)
+
+Ludw_grandiflora <- crms8 %>% filter (specCode=="Ludw_grandiflora")%>%
+  select (StationID, specCode, SpName, year) %>% group_by(StationID, SpName, year) %>% summarise(n=n())
+Ludw_grandiflora
+range(Ludw_grandiflora$n)#1 1 = means no two SpName-s at the same plot, good to spread()
+
+Phra_australis <- crms8 %>% filter (specCode=="Phra_australis")%>%
+  select (StationID, specCode, SpName, year) %>% group_by(StationID, SpName, year) %>% summarise(n=n())
+Phra_australis
+range(Phra_australis$n)#1 1 = means no two SpName-s at the same plot, good to spread()
+
+#Save crms8 for joining species names with trait data:
+#write.csv(sp, file = "CRMS_Marsh_Veg_SpeciesList.csv" )
+
+crms8b <- select(crms8, StationID.year, Community, specCode, Cover, year)
+dim(crms8b)#160691      5
+
+crms8c <- crms8b[!duplicated(crms8b),]
+dim(crms8c)# 160688    5 = 3 records were duplicated
+
+crms9 <- spread (crms8c, key = specCode, value = Cover) #ERROR!
+#Spread does not work as some recors are still duplicated for example:
+###########StationID.year Community year     specCode Cover
+25857 CRMS0136-V50.2008  Brackish 2008 Dist_spicata    15
+25857 CRMS0136-V50.2008  Brackish 2008 Dist_spicata    20
+
+#To deal with erronous records run average of Covers:
+crms8d <- crms8c %>% group_by(StationID.year, Community, specCode, year) %>%
+  summarise(Cover = mean(Cover))
+
+crms9 <- spread (crms8d, key = specCode, value = Cover) #WORKS NOW!
+dim(crms9)#35847   457
 
 
-#Produce Veg MAtrix:====
-crms8b <- select(crms8, - c(genus, species, genus.species, SpName))
-names(crms8b)
+#Split StationID (site.plot) into StationFront(site) and StationBack (plot 2mx2m)
+crms9 <- separate(crms9, StationID.year, into = c("StationFront", "StationBack"), sep = "_", remove = FALSE)
+dim(crms9)#35847   460
+#CHECK=========
+crms9$StationFront.year<-interaction(crms9$StationFront, crms9$year)#We need that for joining
+x <- select(crms9, StationFront.year, Spar_patens) %>%
+  filter(StationFront.year == "CRMS0002.2008")
+x #CRMS0002.2008    27.79167 but should be  66.7%
+mean(x$Spar_patens)
 
-crms9 <- spread (crms8b, key = specCode, value = CoverTotal, fill=0)
-dim(crms9)#160691   463
 
 #Fill in Phraaust with 77.77 if category2 = TRUE (plots unaacessible due to dense stand of Phragmites):
 unique(crms8b$Category2)#"NA"   "PhragInComment"
 crms9$Phra_australis <- ifelse(crms9$Category2  == "NA" ,crms9$Phra_australis,77.77)
 sum(crms9$Phra_australis  == 77.77)#964 = correct.
-
-#Split StationID (site.plot) into StationFront(site) and StationBack (plot 2mx2m)
-crms9 <- separate(crms9, StationID, into = c("StationFront", "StationBack"), sep = "-", remove = FALSE)
-dim(crms9)#160691   465
-
 
 #Remove NA, WateNA (open water) and BareGround:====
 delete <- c("_NA", "BareGround", "WateNA")
