@@ -1,8 +1,8 @@
 #LOAD LIBRARIES & DATA:
-#11june2018 - we give up top weed and look at the impact of all weeds:
-#New Veg  data = VegAllEnvData_11june2018
-VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
-str(VegAllEnvData) #2849 obs. of  470 variables:
+#22june2018 - we give up top weed and look at the impact of all weeds:
+#New Veg  data = VegAllEnvData_22june2018
+VegAllEnvData <- read.csv("VegAllEnvData_22june2018.csv")
+str(VegAllEnvData) #3464 obs. of  471 variables:
 library("lavaan")
 library("semPlot")
 library("tidyverse")
@@ -11,11 +11,16 @@ library("scatterplot3d")
 library("gridExtra")
 library("grid")
 
-#See 04_MERGE_VegHydroSoil for details on how "VegAllEnvData_11june2018.csv" was produced.
+#See 04_MERGE_VegHydroSoil for details on how "VegAllEnvData_22june2018.csv" was produced.
 #"Freshwater" Data ========
-VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
-Freshwater_Only <-  filter (VegAllEnvData, VegAllEnvData$Community=="Freshwater") %>% na.omit()
-dim(Freshwater_Only)#336 470
+VegAllEnvData <- read.csv("VegAllEnvData_22june2018.csv")
+VegAllEnvData <- rename(VegAllEnvData, StationFront = StationFront.x)
+#Joinining veg and env data created two extra columns for StationFront.
+#Rename Stationfront.x to StationFront
+
+Freshwater_Only <-  filter (VegAllEnvData, VegAllEnvData$Community=="Freshwater") %>%
+  na.omit() %>% rename(StationFront = StationFront.x)
+dim(Freshwater_Only)#336 471
 
 #Compute means of all variables per StationFront (site), over all years:
 Freshwater.av <- Freshwater_Only %>% na.omit() %>%
@@ -23,36 +28,36 @@ Freshwater.av <- Freshwater_Only %>% na.omit() %>%
   summarise_at(vars(richness,Mean_SoilSalinity,
                     meanwaterdepthcm,floodedpercent,
                     MeanWaterSalinity, Acer_rubrum:Ziza_miliacea),mean,na.rm=T)
-dim(Freshwater.av)#  41 460
+dim(Freshwater.av)#  42 460
 
 #Subset native/introduced Veg matrix where colSums are > 0:
 Freshwater_Veg_Matrix <- as.data.frame (subset ( Freshwater.av, select = c(Acer_rubrum:Ziza_miliacea)))
-dim(Freshwater_Veg_Matrix)#   41 453
+dim(Freshwater_Veg_Matrix)#   42 453
 Freshwater_Veg_Matrix <- Freshwater_Veg_Matrix [ , which(colSums(Freshwater_Veg_Matrix) > 0)]
-dim(Freshwater_Veg_Matrix)#   63 270
+dim(Freshwater_Veg_Matrix)#   42 283
 
 colCount1 = colSums(Freshwater_Veg_Matrix) #sum up the abundance column-wise
 topID1 = order(colCount1,decreasing=TRUE)[1:length(Freshwater_Veg_Matrix)] # choose all Freshwater plant species
 topID1 = names(Freshwater_Veg_Matrix[topID1]) # names of plant species in decreasing order
 Freshwater_Plant_Sp <- data.frame( specCode = topID1)
-Freshwater_Plant_Sp#270 species (both native and introduced)
+Freshwater_Plant_Sp#283 species (both native and introduced)
 Plant_List <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018, has info on what specCode is native/introduced
 str(Plant_List)#data.frame':	3454 obs. of  6 variables
 
 #join Freshwater_Plants & Plant_List to see which species are native/introduced:
 Plant_List<- subset(Plant_List, select = c(specCode, nat))
 Freshwater_Plants <- left_join(Freshwater_Plant_Sp,Plant_List, by = "specCode")
-dim(Freshwater_Plants)#  270  2
+dim(Freshwater_Plants)#  283  2
 
 #Subset native only
 Freshwater_Native.Species <- filter(Freshwater_Plants, nat == "native")
-Freshwater_Native.Species #216 native species
+Freshwater_Native.Species #228 native species
 
 #Select natives only from Freshwater.av:
 Freshwater.av.veg.native <- subset( Freshwater.av, select = unique(Freshwater_Native.Species$specCode))
-dim(Freshwater.av.veg.native)# 41 216
+dim(Freshwater.av.veg.native)# 42 228
 Freshwater.av.veg.native.total <- rowSums (Freshwater.av.veg.native) #create extra column with total cover of all natives
-range( Freshwater.av.veg.native.total ) # 7.672514 31.495817
+range( Freshwater.av.veg.native.total ) # 55.52063 136.75000
 
 #Compute Richness : 
 Freshwater_Native_Richness <- specnumber(Freshwater_Veg_Matrix)#Compute Native-Only richness
@@ -61,14 +66,39 @@ range(Freshwater_Native_Richness)#   14 93
 #Subset introduced only:
 Freshwater_introduced.Species <- filter(Freshwater_Plants, nat == "introduced")
 Freshwater_introduced.Species #22
+########specCode        nat
+1  Alte_philoxeroid introduced
+2    Colo_esculenta introduced
+3  Ludw_grandiflora introduced
+4    Phra_australis introduced
+5    Luzi_peruviana introduced
+6  Hydr_bonariensis introduced
+7    Sphe_zeylanica introduced
+8       Pani_repens introduced
+9       Salv_minima introduced
+10 Verb_brasiliensi introduced
+11   Sorg_halepense introduced
+12  Alte_caracasana introduced
+13 Alte_paronychioi introduced
+14      Sacc_indica introduced
+15  Hype_perforatum introduced
+16   Cype_difformis introduced
+17 Cype_sanguinolen introduced
+18   Eich_crassipes introduced
+19    Pasp_urvillei introduced
+20     Penn_glaucum introduced
+21       Sonc_asper introduced
+22   Sonc_oleraceus introduced
+
 Freshwater.av.veg.introduced <- subset( Freshwater.av, select = unique(Freshwater_introduced.Species$specCode))
-dim(Freshwater.av.veg.introduced)#41 22
+dim(Freshwater.av.veg.introduced)#42 22
 Freshwater.av.veg.introduced.total <- rowSums (Freshwater.av.veg.introduced)#Extra column = total cover of introduced species per site
 TotalCover_Freshwater_Weeds <- colSums(Freshwater.av.veg.introduced)
-range(TotalCover_Freshwater_Weeds)# 0.001033058 28.982986947
+range(TotalCover_Freshwater_Weeds)# 0.0125 222.3352
 
 #WEED Species in Freshwater:
-names(sort(TotalCover_Freshwater_Weeds, decreasing = TRUE))#22
+names(sort(TotalCover_Freshwater_Weeds, decreasing = TRUE))#22 & 
+#"Alte_philoxeroid"  first = most abundant
 
 Freshwater_Weed_Sp_barchart <- barchart(sort(TotalCover_Freshwater_Weeds),col = "green", main = "Freshwater Alien Plants (colSums)")
 Freshwater_Weed_Sp_barchart
@@ -173,9 +203,11 @@ title("Freshwater path analysis (2007-2017)", line = 1)
 
 
 #"Brackish" Data ========
-VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
+VegAllEnvData <- read.csv("VegAllEnvData_22june2018.csv")
+VegAllEnvData <- rename(VegAllEnvData, StationFront = StationFront.x)
+
 Brackish_Only <-  filter (VegAllEnvData, VegAllEnvData$Community=="Brackish") %>% na.omit()
-dim(Brackish_Only)#284 470
+dim(Brackish_Only)#293 471
 
 #Compute means of all variables per StationFront (site), over all years:
 Brackish.av <- Brackish_Only %>% na.omit() %>%
@@ -183,13 +215,13 @@ Brackish.av <- Brackish_Only %>% na.omit() %>%
   summarise_at(vars(richness,Mean_SoilSalinity,
                     meanwaterdepthcm,floodedpercent,
                     MeanWaterSalinity, Acer_rubrum:Ziza_miliacea),mean,na.rm=T)
-dim(Brackish.av)#  40 460
+dim(Brackish.av)#  42 460
 
 #Subset native/introduced Veg matrix where colSums are > 0:
 Brackish_Veg_Matrix <- as.data.frame (subset ( Brackish.av, select = c(Acer_rubrum:Ziza_miliacea)))
-dim(Brackish_Veg_Matrix)#   40  453
+dim(Brackish_Veg_Matrix)#   42 453
 Brackish_Veg_Matrix <- Brackish_Veg_Matrix [ , which(colSums(Brackish_Veg_Matrix) > 0)]
-dim(Brackish_Veg_Matrix)#   40 90
+dim(Brackish_Veg_Matrix)#   42 87 
 
 colCount2 = colSums(Brackish_Veg_Matrix) #sum up the abundance column-wise
 topID2 = order(colCount2,decreasing=TRUE)[1:length(Brackish_Veg_Matrix)] # choose all Brackish plant species
@@ -202,21 +234,21 @@ str(Plant_List)#data.frame':	3454 obs. of  6 variables
 #join Brackish_Plants & Plant_List to see which species are native/introduced:
 Plant_List<- subset(Plant_List, select = c(specCode, nat))
 Brackish_Plants <- left_join(Brackish_Plant_Sp,Plant_List, by = "specCode")
-dim(Brackish_Plants)#  90 2
+dim(Brackish_Plants)#  87  2
 
 #Subset native only
 Brackish_Native.Species <- filter(Brackish_Plants, nat == "native")
-Brackish_Native.Species #73 native species
+Brackish_Native.Species #70 native species
 
 #Select natives only from Brackish.av:
 Brackish.av.veg.native <- subset( Brackish.av, select = unique(Brackish_Native.Species$specCode))
-dim(Brackish.av.veg.native)# 40 73
+dim(Brackish.av.veg.native)# 42 70
 Brackish.av.veg.native.total <- rowSums (Brackish.av.veg.native) #create extra column with total cover of all natives
-range( Brackish.av.veg.native.total ) # 15.29286 58.29363
+range( Brackish.av.veg.native.total ) #40.80952 118.73840
 
 #Compute Richness : 
 Brackish_Native_Richness <- specnumber(Brackish_Veg_Matrix)#Compute Native-Only richness
-range(Brackish_Native_Richness)#   4 30
+range(Brackish_Native_Richness)#  3 30
 #Subset introduced only:
 Brackish_introduced.Species <- filter(Brackish_Plants, nat == "introduced")
 Brackish_introduced.Species #4
@@ -227,10 +259,10 @@ Brackish_introduced.Species #4
 4           Amar_L introduced
 
 Brackish.av.veg.introduced <- subset( Brackish.av, select = unique(Brackish_introduced.Species$specCode))
-dim(Brackish.av.veg.introduced)#40  4
+dim(Brackish.av.veg.introduced)#42  4
 Brackish.av.veg.introduced.total <- rowSums (Brackish.av.veg.introduced)#Extra column = total cover of introduced species per site
 TotalCover_Brackish_Weeds <- colSums(Brackish.av.veg.introduced)
-range(TotalCover_Brackish_Weeds)# 0.02264104 6.45124849
+range(TotalCover_Brackish_Weeds)# 0.1111111 21.6052579
 
 #WEED Species in Brackish:
 names(sort(TotalCover_Brackish_Weeds, decreasing = TRUE))
@@ -268,7 +300,7 @@ ordiplot(Brackish.pca, display = 'sites', type = 'points',
 #Combine MDS PC and env data together:
 coordinates<-as.data.frame(Brackish.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
 Brackish_Data<-cbind(coordinates, Brackish.av.env)
-dim(Brackish_Data)#only 40 19
+dim(Brackish_Data)#42 10
 
 #Standarize the variables so their effect size are comparable:
 Brackish_Data$TotRich     <- scale (Brackish_Data$richness)
@@ -337,9 +369,9 @@ title("Brackish path analysis (2007-2017)", line = 1)
 
 
 #"Intermediate" Data ========
-VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
+VegAllEnvData <- read.csv("VegAllEnvData_22june2018.csv")
 Intermediate_Only <-  filter (VegAllEnvData, VegAllEnvData$Community=="Intermediate") %>% na.omit()
-dim(Intermediate_Only)#388 470
+dim(Intermediate_Only)#358 471
 
 #Compute means of all variables per StationFront (site), over all years:
 Intermediate.av <- Intermediate_Only %>% na.omit() %>%
@@ -347,13 +379,13 @@ Intermediate.av <- Intermediate_Only %>% na.omit() %>%
   summarise_at(vars(richness,Mean_SoilSalinity,
                     meanwaterdepthcm,floodedpercent,
                     MeanWaterSalinity, Acer_rubrum:Ziza_miliacea),mean,na.rm=T)
-dim(Intermediate.av)#  59 460
+dim(Intermediate.av)#  55 460
 
 #Subset native/introduced Veg matrix where colSums are > 0:
 Intermediate_Veg_Matrix <- as.data.frame (subset ( Intermediate.av, select = c(Acer_rubrum:Ziza_miliacea)))
-dim(Intermediate_Veg_Matrix)#   59 453
+dim(Intermediate_Veg_Matrix)#   55 453
 Intermediate_Veg_Matrix <- Intermediate_Veg_Matrix [ , which(colSums(Intermediate_Veg_Matrix) > 0)]
-dim(Intermediate_Veg_Matrix)#    59 207
+dim(Intermediate_Veg_Matrix)#    55 194
 
 colCount3 = colSums(Intermediate_Veg_Matrix) #sum up the abundance column-wise
 topID3 = order(colCount3,decreasing=TRUE)[1:length(Intermediate_Veg_Matrix)] # choose all Intermediate plant species
@@ -361,26 +393,25 @@ topID3 = names(Intermediate_Veg_Matrix[topID3]) # names of plant species in decr
 Intermediate_Plant_Sp <- data.frame( specCode = topID3)
 Intermediate_Plant_Sp#207 species (both native and introduced)
 Plant_List <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018, has info on what specCode is native/introduced
-str(Plant_List)#data.frame':	3454 obs. of  6 variables
 
 #join Intermediate_Plants & Plant_List to see which species are native/introduced:
 Plant_List<- subset(Plant_List, select = c(specCode, nat))
 Intermediate_Plants <- left_join(Intermediate_Plant_Sp,Plant_List, by = "specCode")
-dim(Intermediate_Plants)#  207   2
+dim(Intermediate_Plants)#  194   2
 
 #Subset native only
 Intermediate_Native.Species <- filter(Intermediate_Plants, nat == "native")
-Intermediate_Native.Species #163 native species
+Intermediate_Native.Species #152 native species
 
 #Select natives only from Intermediate.av:
 Intermediate.av.veg.native <- subset( Intermediate.av, select = unique(Intermediate_Native.Species$specCode))
-dim(Intermediate.av.veg.native)#  59 163
+dim(Intermediate.av.veg.native)#  55 152
 Intermediate.av.veg.native.total <- rowSums (Intermediate.av.veg.native) #create extra column with total cover of all natives
-range( Intermediate.av.veg.native.total ) #1.666667 58.009656
+range( Intermediate.av.veg.native.total ) #   60.79143 170.80400
 
 #Compute Richness : 
 Intermediate_Native_Richness <- specnumber(Intermediate_Veg_Matrix)#Compute Native-Only richness
-range(Intermediate_Native_Richness)# 6 66
+range(Intermediate_Native_Richness)# 6 65
 #Subset introduced only:
 Intermediate_introduced.Species <- filter(Intermediate_Plants, nat == "introduced")
 Intermediate_introduced.Species #4
@@ -403,11 +434,11 @@ Intermediate_introduced.Species #4
 16           Amar_L introduced
 
 Intermediate.av.veg.introduced <- subset( Intermediate.av, select = unique(Intermediate_introduced.Species$specCode))
-dim(Intermediate.av.veg.introduced)#59 16
+dim(Intermediate.av.veg.introduced)#55 16
 Intermediate.av.veg.introduced.total <- rowSums (Intermediate.av.veg.introduced)#Extra column = total cover of introduced species per site
-range(Intermediate.av.veg.introduced.total)# 0.00000 72.57026
+range(Intermediate.av.veg.introduced.total)# 0.00000 56.78286
 TotalCover_Intermediate_Weeds <- colSums(Intermediate.av.veg.introduced)
-range(TotalCover_Intermediate_Weeds)#  2.937063e-03 1.390482e+02
+range(TotalCover_Intermediate_Weeds)#  0.01909091 181.01777778
 
 #WEED Species in Intermediate:
 names(sort(TotalCover_Intermediate_Weeds, decreasing = TRUE))
@@ -512,7 +543,7 @@ title("Intermediate path analysis (2007-2017)", line = 1)
 
 
 #"Saline" Data ========
-VegAllEnvData <- read.csv("VegAllEnvData_11june2018.csv")
+VegAllEnvData <- read.csv("VegAllEnvData_22june2018.csv")
 Saline_Only <-  filter (VegAllEnvData, VegAllEnvData$Community=="Saline") %>% na.omit()
 dim(Saline_Only)#now: 478 470
 
