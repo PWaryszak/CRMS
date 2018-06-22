@@ -13,7 +13,7 @@ crms1<- crms %>% select (Station.ID, Collection.Date..mm.dd.yyyy.,
   rename(StationID = Station.ID, CollectionDate = Collection.Date..mm.dd.yyyy.,
          Cover = X..Cover,
          SpName = Scientific.Name.As.Currently.Recognized)
-                           
+
 #Replace all special character in SpName with nothing:======
 #Web: http://www.endmemo.com/program/R/gsub.php
 crms1a <- crms1
@@ -23,8 +23,8 @@ unique(crms1a$SpName)
 
 #Split the CollectionDate into 3 columns: day/month/year:
 crms2<-crms1a %>% separate(col = CollectionDate ,
-                          into=c("month","day","year"),sep="/",
-                          remove = F)
+                           into=c("month","day","year"),sep="/",
+                           remove = F)
 dim(crms2) #325609     11
 #Select time and veg set you want to work with:======
 crms3 <- filter(crms2,  year < 2018  &  year > 2006,
@@ -55,7 +55,7 @@ dim(crms4) #192369     13
 #Rename species to standard specCode (vegan-friendly):=====
 #seperate complex spName into genus and species:
 crms5 <- crms4  %>% separate(col = SpName, into = c("genus", "species", "extra_sp_info"),
-                        fill= "right", extra= "merge", sep= "\\s" , remove = F)
+                             fill= "right", extra= "merge", sep= "\\s" , remove = F)
 
 #Cut 4 letters of genus and 11 of species and turn into specCode (Vegan-friendly):
 crms6 <- crms5 %>% mutate(spec = strtrim(genus, 4), Code = strtrim(species, 11)) %>%
@@ -143,7 +143,7 @@ crms9 <- spread (crms8c, key = specCode, value = Cover) #ERROR!
 crms8d <- crms8c %>% group_by(StationID.year, Community, specCode, year) %>%
   summarise(Cover = mean(Cover))
 
-crms9 <- spread (crms8d, key = specCode, value = Cover) #WORKS NOW!
+crms9 <- spread (crms8d, key = specCode, value = Cover, fill = 0) #WORKS NOW!
 dim(crms9)#35847   457
 
 
@@ -154,22 +154,18 @@ dim(crms9)#35847   460
 crms9$StationFront.year<-interaction(crms9$StationFront, crms9$year)#We need that for joining
 x <- select(crms9, StationFront.year, Spar_patens) %>%
   filter(StationFront.year == "CRMS0002.2008")
-x #CRMS0002.2008    27.79167 but should be  66.7%
-mean(x$Spar_patens)
+x
+mean(x$Spar_patens)#All good if =  66.7%, we got this value in pivot table in raw csv file.
 
 
-#Fill in Phraaust with 77.77 if category2 = TRUE (plots unaacessible due to dense stand of Phragmites):
-unique(crms8b$Category2)#"NA"   "PhragInComment"
-crms9$Phra_australis <- ifelse(crms9$Category2  == "NA" ,crms9$Phra_australis,77.77)
-sum(crms9$Phra_australis  == 77.77)#964 = correct.
 
 #Remove NA, WateNA (open water) and BareGround:====
 delete <- c("_NA", "BareGround", "WateNA")
 veg <- crms9[, !(names(crms9) %in% delete)] 
-dim(veg)# 160691   464 
+dim(veg)# 35847   460
 
 #check if all rows > 0:
-vegveg <- veg[ , 11:464]
+vegveg <- veg[ , 6:459]
 occur.row<-apply(vegveg,1,sum)
 zeroRows<-vegveg[occur.row <= 0 ,]
 nrow(zeroRows)# 263 zero rows to be removed
@@ -181,21 +177,16 @@ ncol(oneColumns)#0
 
 #Remove zero rows from veg data:
 v <- veg[ ! occur.row == 0 ,]
-dim(v)# 160428    464
+dim(v)# 34961   460
+names(v)
+v <- separate(v, StationID.year, into = c("StationID", "RemoveThisYear"), sep = "\\.", remove = TRUE)
+dim(v)#34961   461
+v <- select (v, -RemoveThisYear)
+dim(v)#34961   460
 
-#Creat new "CRMS_Marsh_Veg.csv"
-#=> end clean file = "CRMS_Marsh_Veg.csv"
+#Create new clean "CRMS_Marsh_Veg.csv"
 #write.csv(v, file = "CRMS_Marsh_Veg.csv", row.names = FALSE)
 
-
-#Join crms8a with Emilys LA_Plants list (Traits+Provenance) for future analysis:=====
-Emilys_Plants <- read.csv("LA_Plants.csv")
-str(Emilys_Plants)#data.frame':	3379 obs. of  11 variables:
-CRMS_Plants <- crms8 %>% select(specCode, genus.species) %>%
-  group_by(specCode, genus.species) %>%   summarise(n=n())
-length(levels(droplevels(CRMS_Plants$specCode))) #455 species
-Plants<- left_join(CRMS_Plants,Emilys_Plants, by = "specCode")
-#write.csv(Plants, file = "Plants.csv")# check in excel the missing specCode names
-
-
-
+z <- select(v, StationFront.year, Spar_patens) %>%
+  filter(StationFront.year == "CRMS0002.2008")
+mean(z$Spar_patens)#All good if mean(z) =  66.7%, we got this value in pivot table in raw csv file.
