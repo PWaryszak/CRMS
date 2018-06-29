@@ -3,9 +3,10 @@
 #CRMS ONLY:https://cims.coastal.louisiana.gov/RequestedDownloads/ZippedFiles/CRMS_Marsh_Vegetation.zip
 library(tidyverse)
 #REMOVE flying × if any in raw data (there was one at Agropogon Fourn)
-
+#LOAD DATA:
 crms <- read.csv("CRMS_Marsh_Vegetation_RAW.csv") #325609 obs. of  30 variables on 08june2018:
 
+#Rename variable to human-friendly:
 crms1<- crms %>% select (Station.ID, Collection.Date..mm.dd.yyyy.,
                          Community,Vegetation.Type,X..Cover,
                          Scientific.Name.As.Currently.Recognized,
@@ -38,8 +39,11 @@ sum(i1==TRUE)#964 plots with comment on estimated Phragmites cover as the sites 
 #These i1 sites were too dense to access.
 #Phragmites was estimated between 70% & 100%
 crms3$Category <- i1 
-crms3$Category2 <- ifelse(crms3$Category==TRUE, "PhragInComment", "NA") #estra column to keep track of what TRUE means
-crms3$In.Out[crms3$Category== TRUE] <- "Both" #we need to change In.Out to Both to keep this record.
+crms3$Category2 <- ifelse(crms3$Category==TRUE, "PhragInComment", "NA") #extra column to keep track of what TRUE means
+table(crms3$In.Out[crms3$Category=="TRUE"])#All Phrag in comment is recorded as OUT:
+#Both   In  Out 
+#   0    0  964 
+#crms3$In.Out[crms3$Category== TRUE] <- "Both" #change In.Out to Both to keep this record.
 #substitute - for _ so it is R-friendly:
 crms3$StationID<-as.factor(sub("-","_",crms3$StationID))
 
@@ -49,8 +53,7 @@ crms3$StationID<-as.factor(sub("-","_",crms3$StationID))
 #Cover measures the cover within the quadrat only. Out-records add to CoverTotal value.
 
 crms4 <- filter(crms3, In.Out != "Out")
-dim(crms4) #192369     13
-
+dim(crms4) # 191405     13
 
 #Rename species to standard specCode (vegan-friendly):=====
 #seperate complex spName into genus and species:
@@ -63,14 +66,14 @@ crms6 <- crms5 %>% mutate(spec = strtrim(genus, 4), Code = strtrim(species, 11))
   select( StationID, day, month, year, Community, Cover, Category2,SpName, genus, species, specCode) %>%
   mutate (StationID.year = interaction(StationID,year),
           genus.species  = interaction(genus,species)) #extra column
-dim(crms6)# 192369      13
+dim(crms6)# 191405     13
 length(unique(crms6$specCode))#570
 unique(crms6$specCode)
 
 #Remove duplicates if any:
 crms7<- distinct(crms6)
 crms7$i <- 1:nrow(crms7)#assign id to each row to make "spread" function work smoothly.
-dim(crms7)#  192369     14
+dim(crms7)#  191405     14
 
 #Remove Swamp Comunities 
 #Mutate Cover (<1 and Solitary) to numeric value:
@@ -81,7 +84,7 @@ crms8  <-   filter(crms7, Community !="Swamp") %>%
   mutate(Cover = recode(Cover, "Solitary" = "0.1"))
 
 sum(is.na(crms8$Cover))#Double check if NA-s produced = 0, If NA-s turn them to 0= is.na(crms8$Cover) <-0
-dim(crms8)#160691     14
+dim(crms8)# 159727     14
 
 #Turn factors into numeric values and characters into factors:=====
 crms8$Cover <- as.numeric(as.character(crms8$Cover))
@@ -100,8 +103,7 @@ crms8$specCode <- factor(crms8$specCode)#to remove empty levels.
 
 #Check if specCode-s duplicate (the same specCode assigned to different species)====
 #It should be 455 rows of specCodes:
-crms8a <- select(crms8, - c(genus, species, genus.species, Category2))
-sp <- crms8a %>% 
+sp <-  select(crms8, - c(genus, species, genus.species, Category2))%>%
   group_by(specCode, SpName) %>%
   summarise(n=n()) %>% distinct()
 str(sp) # sp$ specCode     : Factor w/ 455 levels
@@ -111,9 +113,8 @@ specCode_duplicated <- spCode[duplicated(spCode),]
 specCode_duplicated #Ludw_grandiflora and  Phra_australis but these look OK!
 #Ludwigia grandiflora Michx Greuter  Burdet versus Ludwigia grandiflora Michx Greuter  Burdet ssp hexapetala Hook  Arn GL Nesom  Kartesz
 #Phragmites australis Cav Trin ex Steud versus Phragmites australis Cav Trin ex Steud ssp australis
-#Merge these two species together using mean.
-duplicated(sp$specCode)
 
+#Checking if these two species are recorded togehter
 Ludw_grandiflora <- crms8 %>% filter (specCode=="Ludw_grandiflora")%>%
   select (StationID, specCode, SpName, year) %>% group_by(StationID, SpName, year) %>% summarise(n=n())
 Ludw_grandiflora
@@ -127,48 +128,87 @@ range(Phra_australis$n)#1 1 = means no two SpName-s at the same plot, good to sp
 #Save crms8 for joining species names with trait data:
 #write.csv(sp, file = "CRMS_Marsh_Veg_SpeciesList.csv" )
 
-crms8b <- select(crms8, StationID.year, Community, specCode, Cover, year)
-dim(crms8b)#160691      5
 
-crms8c <- crms8b[!duplicated(crms8b),]
-dim(crms8c)# 160688    5 = 3 records were duplicated
+#As per email from CPRA in regards to duplicated records (LeighAnne.Sharp@la.gov):
+#That would be the regularly scheduled vegetation assessment. 
+#The second trip in October was conducted by CPRA (then DNR) staff.
+#That would be a post hurricane assessment (H. Gustav was 9/1/08; H. Ike was 9/13/08). 
+#We re-sampled select sites after the 2008 storms.  You can sort those out by Organization.  
+#The data is spread across post- and prio-hurricance months (06-10) 
+sort( table (crms8$month))
+#12    11    05    06     6     7    10    09     9     8    07    08 
+#24    28   402   875  1018  4829  7016  7927 13006 38459 41789 44354
 
-crms9 <- spread (crms8c, key = specCode, value = Cover) #ERROR!
-#Spread does not work as some recors are still duplicated for example:
-###########StationID.year Community year     specCode Cover
-25857 CRMS0136-V50.2008  Brackish 2008 Dist_spicata    15
-25857 CRMS0136-V50.2008  Brackish 2008 Dist_spicata    20
 
-#To deal with erronous records run average of Covers:
-crms8d <- crms8c %>% group_by(StationID.year, Community, specCode, year) %>%
-  summarise(Cover = mean(Cover))
+#Find duplicate StaionFront.month records and remove the latest:
+#Fix the month names:
+crms8$month <- as.factor(crms8$month)
+levels(crms8$month)[levels(crms8$month)== "05"] <- "5"
+levels(crms8$month)[levels(crms8$month)== "06"] <- "6"
+levels(crms8$month)[levels(crms8$month)== "07"] <- "7"
+levels(crms8$month)[levels(crms8$month)== "08"] <- "8"
+levels(crms8$month)[levels(crms8$month)== "09"] <- "9"
+sort( table (crms8$month))
+#12    11     5     6    10     9     7     8 
+#24    28   402  1893  7016 20933 46618 82813
 
-crms9 <- spread (crms8d, key = specCode, value = Cover, fill = 0) #WORKS NOW!
-dim(crms9)#35847   457
+#Create site (StationFront) variable:
+crms8.dupl <- separate(crms8, StationID, into = c("StationFront", "StationBack"), 
+                       sep = "_", remove = FALSE)
+#Create Station.Front.month.year variable:
+crms8.dupl$StationID.year<- interaction(crms8.dupl$StationID,
+                                                   crms8.dupl$year)
 
+#See if any StationFront was measured more than once (two different monts):
+Find.duplicated <- crms8.dupl %>%
+  group_by(StationID.year, month) %>%
+  summarise(TotalCover = sum(Cover), N = n()) 
+#View(Find.duplicated) 
+#Create a  data.frame with duplicated surveys:
+duplicated.ID <- Find.duplicated[duplicated(Find.duplicated$StationID.year),]
+as.data.frame(duplicated.ID) #25
+
+#Create StationID.year.month variable to ID rows to remove
+duplicated.ID$StationID.year.month <- interaction (duplicated.ID$StationID.year,
+                                                   duplicated.ID$month)
+#Create StationID.year.month variable to match duplicated.ID
+crms8.dupl$StationID.year.month<- interaction(crms8.dupl$StationID.year,
+                                        crms8.dupl$month)
+
+
+#Remove the duplicated levels of StationID.year.month:
+crms8c <- crms8.dupl [ ! crms8.dupl$StationID.year.month %in% duplicated.ID$StationID.year.month, ]
+dim(crms8c)#159677     18
+dim(crms8.dupl)#159727     18
+
+#Other good way to fix duplicated surveys issue is to run average of Covers on specific group:
+#crms8_clean <- crms8c %>%  group_by(StationID.year, Community, specCode, year) %>%  summarise(Cover = mean(Cover))
+#But we agreed with Emily & Christina that removing the duplicated records is more sound.
+
+#Create wide species matrix:
+crms9 <- spread (crms8_clean, key = specCode, value = Cover, fill = 0) #WORKS NOW after removing duplicated surveys!
+dim(crms9)#35212   458
 
 #Split StationID (site.plot) into StationFront(site) and StationBack (plot 2mx2m)
 crms9 <- separate(crms9, StationID.year, into = c("StationFront", "StationBack"), sep = "_", remove = FALSE)
-dim(crms9)#35847   460
-#CHECK=========
+dim(crms9) #35212   460
+
+#DOUBLE-CHECK DATA with Excel Raw File=========
 crms9$StationFront.year<-interaction(crms9$StationFront, crms9$year)#We need that for joining
 x <- select(crms9, StationFront.year, Spar_patens) %>%
   filter(StationFront.year == "CRMS0002.2008")
-x
 mean(x$Spar_patens)#All good if =  66.7%, we got this value in pivot table in raw csv file.
-
-
 
 #Remove NA, WateNA (open water) and BareGround:====
 delete <- c("_NA", "BareGround", "WateNA")
 veg <- crms9[, !(names(crms9) %in% delete)] 
-dim(veg)# 35847   460
+dim(veg)# 35207   460
 
 #check if all rows > 0:
-vegveg <- veg[ , 6:459]
+vegveg <- veg[ , 6:458]
 occur.row<-apply(vegveg,1,sum)
 zeroRows<-vegveg[occur.row <= 0 ,]
-nrow(zeroRows)# 263 zero rows to be removed
+nrow(zeroRows)# 250 zero rows to be removed
 
 #check if all columns > 0:
 occur.col<-apply(vegveg,2,sum)
@@ -177,16 +217,18 @@ ncol(oneColumns)#0
 
 #Remove zero rows from veg data:
 v <- veg[ ! occur.row == 0 ,]
-dim(v)# 34961   460
+dim(v)# 34957   460
 names(v)
-v <- separate(v, StationID.year, into = c("StationID", "RemoveThisYear"), sep = "\\.", remove = TRUE)
-dim(v)#34961   461
+v <- separate(v, StationFront.year, into = c("StationID", "RemoveThisYear"),
+              sep = "\\.", remove = FALSE)
+dim(v)#34957   462
 v <- select (v, -RemoveThisYear)
-dim(v)#34961   460
-
-#Create new clean "CRMS_Marsh_Veg.csv"
-#write.csv(v, file = "CRMS_Marsh_Veg.csv", row.names = FALSE)
+dim(v)#34957   461
 
 z <- select(v, StationFront.year, Spar_patens) %>%
   filter(StationFront.year == "CRMS0002.2008")
 mean(z$Spar_patens)#All good if mean(z) =  66.7%, we got this value in pivot table in raw csv file.
+
+#Create new clean "CRMS_Marsh_Veg.csv"
+#write.csv(v, file = "CRMS_Marsh_Veg.csv", row.names = FALSE)
+#Proceed to: 02_CLEAN_CRMS_Hydro, 03_CLEAN_CRMS_Soil, 04_MERGE_VegHydroSoil 
