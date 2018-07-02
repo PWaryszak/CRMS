@@ -20,7 +20,7 @@ crms1<- crms %>% select (Station.ID, Collection.Date..mm.dd.yyyy.,
 crms1a <- crms1
 crms1a$SpName <- iconv(crms1a$SpName, to = "ASCII//TRANSLIT") #Convert to ASCII format
 crms1a$SpName <- gsub("[[:punct:]]", "", crms1a$SpName)#replace special characters with nothing
-unique(crms1a$SpName)
+unique(crms1a$SpName) #See plant species names assigned by CMRS crew
 
 #Split the CollectionDate into 3 columns: day/month/year:
 crms2<-crms1a %>% separate(col = CollectionDate ,
@@ -40,11 +40,12 @@ sum(i1==TRUE)#964 plots with comment on estimated Phragmites cover as the sites 
 #Phragmites was estimated between 70% & 100%
 crms3$Category <- i1 
 crms3$Category2 <- ifelse(crms3$Category==TRUE, "PhragInComment", "NA") #extra column to keep track of what TRUE means
-table(crms3$In.Out[crms3$Category=="TRUE"])#All Phrag in comment is recorded as OUT:
+table(crms3$In.Out[crms3$Category=="TRUE"])#All Phragmites-in-comment was recorded as OUT:
 #Both   In  Out 
 #   0    0  964 
 #crms3$In.Out[crms3$Category== TRUE] <- "Both" #change In.Out to Both to keep this record.
-#substitute - for _ so it is R-friendly:
+
+#substitute - for _ so:
 crms3$StationID<-as.factor(sub("-","_",crms3$StationID))
 
 #Keep "Out" out: Column In.Out assigns IN/OUT/BOTH categories to all species.
@@ -96,7 +97,7 @@ crms8$specCode<- factor(crms8$specCode)
 str(crms8)
 
 length(unique(crms8$specCode))#455
-(unique(crms8$specCode))
+(unique(crms8$specCode))#Check out new standarized R-friendly plant species names
 
 #Spread specCode into columns (produce final Veg matrix):=====
 crms8$specCode <- factor(crms8$specCode)#to remove empty levels.
@@ -114,7 +115,7 @@ specCode_duplicated #Ludw_grandiflora and  Phra_australis but these look OK!
 #Ludwigia grandiflora Michx Greuter  Burdet versus Ludwigia grandiflora Michx Greuter  Burdet ssp hexapetala Hook  Arn GL Nesom  Kartesz
 #Phragmites australis Cav Trin ex Steud versus Phragmites australis Cav Trin ex Steud ssp australis
 
-#Checking if these two species are recorded togehter
+#Checking if these two species are recorded togehter in one plot (observation unit):
 Ludw_grandiflora <- crms8 %>% filter (specCode=="Ludw_grandiflora")%>%
   select (StationID, specCode, SpName, year) %>% group_by(StationID, SpName, year) %>% summarise(n=n())
 Ludw_grandiflora
@@ -139,9 +140,8 @@ sort( table (crms8$month))
 #12    11    05    06     6     7    10    09     9     8    07    08 
 #24    28   402   875  1018  4829  7016  7927 13006 38459 41789 44354
 
-
-#Find duplicate StaionFront.month records and remove the latest:
-#Fix the month names:
+#Find duplicate StaionFront.month records and remove the latter ones in duplicated records:
+#Fix the month names first:
 crms8$month <- as.factor(crms8$month)
 levels(crms8$month)[levels(crms8$month)== "05"] <- "5"
 levels(crms8$month)[levels(crms8$month)== "06"] <- "6"
@@ -159,10 +159,11 @@ crms8.dupl <- separate(crms8, StationID, into = c("StationFront", "StationBack")
 crms8.dupl$StationID.year<- interaction(crms8.dupl$StationID,
                                                    crms8.dupl$year)
 
-#See if any StationFront was measured more than once (two different monts):
+#See if any StationFront was measured more than once (in two different montns):
 Find.duplicated <- crms8.dupl %>%
   group_by(StationID.year, month) %>%
   summarise(TotalCover = sum(Cover), N = n()) 
+dim(Find.duplicated)# 35232     4
 #View(Find.duplicated) 
 #Create a  data.frame with duplicated surveys:
 duplicated.ID <- Find.duplicated[duplicated(Find.duplicated$StationID.year),]
@@ -171,27 +172,28 @@ as.data.frame(duplicated.ID) #25
 #Create StationID.year.month variable to ID rows to remove
 duplicated.ID$StationID.year.month <- interaction (duplicated.ID$StationID.year,
                                                    duplicated.ID$month)
-#Create StationID.year.month variable to match duplicated.ID
+#Create StationID.year.month variable  in crms8 dataset to match records in duplicated.ID
 crms8.dupl$StationID.year.month<- interaction(crms8.dupl$StationID.year,
                                         crms8.dupl$month)
 
 
 #Remove the duplicated levels of StationID.year.month:
 crms8c <- crms8.dupl [ ! crms8.dupl$StationID.year.month %in% duplicated.ID$StationID.year.month, ]
-dim(crms8c)#159677     18
-dim(crms8.dupl)#159727     18
+dim(crms8c)#159677     17
+dim(crms8.dupl)#159727     17
 
 #Other good way to fix duplicated surveys issue is to run average of Covers on specific group:
 #crms8_clean <- crms8c %>%  group_by(StationID.year, Community, specCode, year) %>%  summarise(Cover = mean(Cover))
 #But we agreed with Emily & Christina that removing the duplicated records is more sound.
 
 #Create wide species matrix:
+crms8_clean <- select(crms8c,  StationID.year, Community, specCode, year, Cover)
 crms9 <- spread (crms8_clean, key = specCode, value = Cover, fill = 0) #WORKS NOW after removing duplicated surveys!
-dim(crms9)#35212   458
+dim(crms9)#159677    470
 
 #Split StationID (site.plot) into StationFront(site) and StationBack (plot 2mx2m)
 crms9 <- separate(crms9, StationID.year, into = c("StationFront", "StationBack"), sep = "_", remove = FALSE)
-dim(crms9) #35212   460
+dim(crms9) #35207   460
 
 #DOUBLE-CHECK DATA with Excel Raw File=========
 crms9$StationFront.year<-interaction(crms9$StationFront, crms9$year)#We need that for joining
@@ -201,11 +203,11 @@ mean(x$Spar_patens)#All good if =  66.7%, we got this value in pivot table in ra
 
 #Remove NA, WateNA (open water) and BareGround:====
 delete <- c("_NA", "BareGround", "WateNA")
-veg <- crms9[, !(names(crms9) %in% delete)] 
-dim(veg)# 35207   460
+v1 <- crms9[, !(names(crms9) %in% delete)] 
+dim(v1)# 35207   460
 
 #check if all rows > 0:
-vegveg <- veg[ , 6:458]
+vegveg <- v1[ , 6:458]
 occur.row<-apply(vegveg,1,sum)
 zeroRows<-vegveg[occur.row <= 0 ,]
 nrow(zeroRows)# 250 zero rows to be removed
@@ -216,19 +218,19 @@ oneColumns<-vegveg [,occur.col < 0]
 ncol(oneColumns)#0
 
 #Remove zero rows from veg data:
-v <- veg[ ! occur.row == 0 ,]
-dim(v)# 34957   460
-names(v)
-v <- separate(v, StationFront.year, into = c("StationID", "RemoveThisYear"),
+v2 <- v1[ ! occur.row == 0 ,]
+dim(v2)# 34957   460
+names(v2)
+v3 <- separate(v2, StationID.year, into = c("StationID", "RemoveThisYear"),
               sep = "\\.", remove = FALSE)
-dim(v)#34957   462
-v <- select (v, -RemoveThisYear)
-dim(v)#34957   461
+dim(v3)#34957   462
+v4 <- select (v3, -RemoveThisYear)
+dim(v4)#34957   461
 
-z <- select(v, StationFront.year, Spar_patens) %>%
+z <- select(v4, StationFront.year, Spar_patens) %>%
   filter(StationFront.year == "CRMS0002.2008")
 mean(z$Spar_patens)#All good if mean(z) =  66.7%, we got this value in pivot table in raw csv file.
 
-#Create new clean "CRMS_Marsh_Veg.csv"
-#write.csv(v, file = "CRMS_Marsh_Veg.csv", row.names = FALSE)
+#Create new clean "CRMS_Marsh_Veg.csv":
+#write.csv(v4, file = "CRMS_Marsh_Veg.csv", row.names = FALSE)
 #Proceed to: 02_CLEAN_CRMS_Hydro, 03_CLEAN_CRMS_Soil, 04_MERGE_VegHydroSoil 
