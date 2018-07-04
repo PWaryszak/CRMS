@@ -84,8 +84,13 @@ Freshwater_Data$Composition <- scale (Freshwater_Data$V1)
 Freshwater_Data$Flood       <- scale (Freshwater_Data$floodedpercent)
 Freshwater_Data$Depth       <- scale (Freshwater_Data$meanwaterdepthcm)
 Freshwater_Data$Depth_SD    <- scale (Freshwater_Data$meanwaterdepthcm_SD)
+#write.csv(Freshwater_Data, file = "Freshwater_Data4SEM.csv")
 
+#Freshwater SEM:=========
 #All terms significant, backward selection from full model (see "Path_SEM3" R file, line ~200)
+#You can load data directly from previosly saved "Freshwater_Data4SEM.csv"
+Freshwater_Data <- read.csv("Freshwater_Data4SEM.csv")
+
 model_Freshwater <- '
 #regressions:
 NatRich     ~ Depth + Flood     
@@ -93,7 +98,6 @@ Native      ~ Depth + Flood  + Soil + Alien
 Composition ~ Soil + Alien 
 
 #covariances:
-NatRich ~~ Native
 Composition ~~ 0*NatRich
 Native ~~ 0*Composition
 '
@@ -182,6 +186,7 @@ Brackish_Data$Flood       <- scale (Brackish_Data$floodedpercent)
 Brackish_Data$Depth       <- scale (Brackish_Data$meanwaterdepthcm)
 Brackish_Data$Depth_SD    <- scale (Brackish_Data$meanwaterdepthcm_SD)
 
+#Brackish SEM=========
 #best fit model:
 model_Brackish <- '
 #regressions:
@@ -190,7 +195,6 @@ Native      ~  Flood
 Composition ~  Soil 
 
 #covariances:
-NatRich ~~ Native
 Composition ~~ 0*NatRich
 Native ~~ 0*Composition
 '
@@ -270,6 +274,7 @@ Saline_Data$Flood       <- scale (Saline_Data$floodedpercent)
 Saline_Data$Depth       <- scale (Saline_Data$meanwaterdepthcm)
 Saline_Data$Depth_SD    <- scale (Saline_Data$meanwaterdepthcm_SD)
 
+#Saline SEM===========
 #Best fit model:
 model_Saline <- '
 #regressions:
@@ -280,7 +285,6 @@ Alien       ~ Depth + Flood  + Soil
 Composition ~  NatRich + Native
 
 #covariances:
-NatRich ~~ Native
 Composition ~~ 0*NatRich
 Native ~~ 0*Composition
 Alien ~~ 0*Composition
@@ -369,6 +373,7 @@ Intermediate_Data$Flood       <- scale (Intermediate_Data$floodedpercent)
 Intermediate_Data$Depth       <- scale (Intermediate_Data$meanwaterdepthcm)
 Intermediate_Data$Depth_SD    <- scale (Intermediate_Data$meanwaterdepthcm_SD)
 
+#Intermediate SEM ========
 #best fit model:
 model_Intermediate <- '
 #regressions:
@@ -378,7 +383,6 @@ Alien       ~  Soil
 Composition ~ Alien + NatRich + Native
 
 #covariances:
-NatRich ~~ Native
 Composition ~~ 0*NatRich
 Native ~~ 0*Composition
 '
