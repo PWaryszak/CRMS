@@ -96,7 +96,7 @@ Freshwater_Data$Depth_SD    <- scale (Freshwater_Data$meanwaterdepthcm_SD)
 
 #Freshwater SEM:=========
 #You can load data directly from previosly saved "Freshwater_Data4SEM.csv"
-#Freshwater_Data <- read.csv("Freshwater_Data4SEM.csv")
+Freshwater_Data <- read.csv("Freshwater_Data4SEM.csv")
 Other_Freshwater_Model  <-'
 #regressions:
 NatRich     ~ Depth + Flood  
@@ -108,7 +108,7 @@ NatRich ~~ Native
 NatComp ~~ NatRich
 Native ~~ NatComp
 '
-fit_Other_Freshwater_Model <- sem(Apriori_Model,missing="direct",
+fit_Other_Freshwater_Model <- sem(Other_Freshwater_Model,missing="direct",
                          estimator="ML",data=Freshwater_Data)
 summary(fit_Other_Freshwater_Model)
 
@@ -126,27 +126,48 @@ Native  ~~ 0*NatComp
 fit_Freshwater <- sem(model_Freshwater,missing="direct",estimator="ML",data=Freshwater_Data)
 summary(fit_Freshwater, fit.measures=TRUE, rsquare=T) 
 
+model_Freshwater3 <- '
+#regressions:
+NatRich     ~ Depth     
+Native      ~ Depth + Soil + Alien
+NatComp     ~ Soil + Alien 
+
+#covariances:
+NatComp ~~ 0*NatRich
+Native  ~~ 0*NatComp
+'
+fit_Freshwater3 <- sem(model_Freshwater3,missing="direct",estimator="ML",data=Freshwater_Data)
+summary(fit_Freshwater3, fit.measures=TRUE, rsquare=T) 
+
 #Compare fit of two Freshwater models:
-AIC(fit_Freshwater, fit_Other_Freshwater_Model)
+AIC(fit_Freshwater, fit_Other_Freshwater_Model,fit_Freshwater3)
 #fit_Freshwater             15 704.5073
-#fit_Other_Freshwater_Model 17 704.4868 #slightly better but with double-headed arrows
+#fit_Other_Freshwater_Model 17 704.4868 
+#fit_Freshwater3            13 672.4939 # Best fit model
 
 #Produce Layout for SemPaths Nodes:
 layFreshwater<-matrix(c(-0.5,  -0.5,
               0.5,  -0.5,
-              0,    -0.35,
-              0,     0.5,
+              0,   -0.3,
+              -0.5,     0.5,
               0.5,   0.5, 
-              -0.5,   0.5,
-              0,     0.15),  ncol=2,byrow=TRUE)#Alien Position
+              0,     0.35),  ncol=2,byrow=TRUE)#Alien Position
+
+#Set groups for coloring, if legend = TRUE it will be displayed on the right:
+grps<-list(Climate_Change=c("Depth","Soil","Flood"),
+           Alien_Cover=c("Alien"),
+           Native_Composition = c("NatComp","NatRich","Native"))
 
 #Run SemPaths drawing device:
-semPaths(fit_Freshwater,"est", intercepts = F, fade = F, 
-         title = T, edge.label.cex = 1.1,sizeMan = 8,edge.labels=FALSE,
-         edge.label.position = 0.25, nCharNodes=6,
-         residuals =  F, exoCov = F, layout = layFreshwater)
-title("Freshwater path analysis (2007-2017, P < 0.05)", line = 1)
-
+semPaths(fit_Freshwater3 ,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.3,sizeMan = 12,edge.labels=FALSE,
+         edge.label.position = 0.2, nCharNodes=6,
+         residuals =  F, exoCov = F, 
+         layout = layFreshwater,
+         edge.label.bg = "lightyellow",
+         color=c("lightblue","yellow","lightgreen"),
+         groups=grps, legend = F)
+title("Freshwater path analysis (2007-2017, P < 0.05)", line =2)
 
 #Check by graphing of some of the significant relationships:
 ggplot(Freshwater_Data,aes(x=Alien,y=NatComp))+
@@ -230,10 +251,10 @@ Intermediate_Data$Depth_SD    <- scale (Intermediate_Data$meanwaterdepthcm_SD)
 
 #write.csv(Intermediate_Data, file = "Intermediate_Data4SEM.csv")
 #You can load data directly from previosly saved "Intermediate_Data4SEM.csv"
-#Intermediate_Data <- read.csv("Intermediate_Data4SEM.csv")
+Intermediate_Data <- read.csv("Intermediate_Data4SEM.csv")
 
 #Intermediate SEM ========
-#Best fit model follwoing backward selection on Apriori Model (see line 15):
+#Pick Best fit model following backward selection on Apriori Model (see line 15):
 model_Intermediate <- '
 #regressions:
 NatRich     ~  Soil 
@@ -248,17 +269,40 @@ Native ~~ 0*NatComp
 fit_Intermediate <- sem(model_Intermediate,missing="direct",estimator="ML",data=Intermediate_Data)
 summary(fit_Intermediate, fit.measures=TRUE, rsquare=T) 
 
+#Model #2:
+model_Intermediate2 <- '
+#regressions:
+NatRich     ~  Soil 
+Native      ~  Soil + Alien
+Alien       ~  Soil 
+NatComp     ~  Soil + NatRich 
+
+#covariances:
+NatComp ~~ NatRich
+Native ~~ NatComp
+Native ~~ NatRich
+'
+fit_Intermediate2 <- sem(model_Intermediate2,missing="direct",estimator="ML",data=Intermediate_Data)
+summary(fit_Intermediate2, fit.measures=TRUE, rsquare=T) 
+
+AIC(fit_Intermediate,  fit_Intermediate2)
+##################df      AIC
+#fit_Intermediate  14 739.8238
+#fit_Intermediate2 17 723.4572 #Best Fit Model
+
 #Design layout of nodes manually for semPaths:
 layIntermediate<-matrix(c(-0.5,  -0.5,
                           0.5,  -0.5,
                           0.5,     0.10,    #Alien Position
-                          0,    -0.35,
+                          0,    -0.3,
                           -0.5,     0.5 ),  ncol=2,byrow=TRUE)
 
-semPaths(fit_Intermediate,"est", intercepts = F, fade = F, 
-         title = T, edge.label.cex = 1.1,sizeMan = 8,
+semPaths(fit_Intermediate2,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.3,sizeMan = 12,
          edge.label.position = 0.25, nCharNodes=6, layout = layIntermediate,
-         residuals =  F, exoCov = F)
+         residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
+         color=c("lightblue","yellow","lightgreen"),
+         groups=grps, legend = F)
 title("Intermediate  path analysis (2007-2017, P<0.05)")
 
 #Check by graphing of some of the significant relationships:
@@ -349,9 +393,10 @@ Brackish_Data$Depth_SD    <- scale (Brackish_Data$meanwaterdepthcm_SD)
 
 #Brackish SEM=========
 #Best fit model follwoing backward selection on Apriori Model (see line 15):
+#1:
 model_Brackish <- '
 #regressions:
-NatRich     ~  Flood  + Soil   
+NatRich     ~  Flood  + Soil
 Native      ~  Flood 
 NatComp     ~  Soil
 
@@ -362,10 +407,57 @@ NatRich ~~ 0*Native
 '
 fit_Brackish <- sem(model_Brackish,missing="direct",estimator="ML",data=Brackish_Data)
 summary(fit_Brackish, fit.measures=TRUE, rsquare=T) 
-semPaths(fit_Brackish,"est", intercepts = F, fade = F, 
-         title = T, edge.label.cex = 1.1,sizeMan = 8,
+
+#2:
+model_Brackish2 <- '
+#regressions:
+NatRich     ~  Flood  + Soil   
+Native      ~  Flood 
+NatComp     ~  Soil
+
+#covariances:
+NatComp ~~ NatRich
+Native ~~ NatComp
+Native ~~ NatRich
+'
+fit_Brackish2 <- sem(model_Brackish2,missing="direct",estimator="ML",data=Brackish_Data)
+summary(fit_Brackish2, fit.measures=TRUE, rsquare=T) 
+
+#3
+model_Brackish3 <- '
+#regressions:
+NatRich     ~  Depth  + Soil
+Native      ~  Depth 
+NatComp     ~  Soil
+
+#covariances:
+NatComp ~~ 0*NatRich
+Native ~~ 0*NatComp
+NatRich ~~ 0*Native
+'
+fit_Brackish3 <- sem(model_Brackish3,missing="direct",estimator="ML",data=Brackish_Data)
+summary(fit_Brackish3, fit.measures=TRUE, rsquare=T) 
+
+AIC(fit_Brackish,fit_Brackish2,fit_Brackish3)
+##############df      AIC
+#fit_Brackish  10 557.2846 
+#fit_Brackish2 13 557.5115 
+#fit_Brackish3 10 554.2543 # marginally better!
+
+#Produce Layout for SemPaths Nodes:
+layBrackish<-matrix(c(-0.5,  -0.5,
+                        0.5,  -0.5,
+                        0,    -0.3,
+                        -0.5,     0.5,
+                        0.5,   0.5),  ncol=2,byrow=TRUE)#Alien Position
+#Plot:
+semPaths(fit_Brackish3,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.3,sizeMan = 12,
          edge.label.position = 0.25, nCharNodes=6,
-         residuals =  F, exoCov = F)
+         layout = layBrackish,
+         residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
+         color=c("lightblue","yellow","lightgreen"),
+         groups=grps, legend = F)
 title("Brackish path analysis (2007-2017, P<0.05)")
 
 #Check by graphing of some of the significant relationships:
@@ -450,10 +542,10 @@ Saline_Data$Depth_SD    <- scale (Saline_Data$meanwaterdepthcm_SD)
 
 #write.csv(Saline_Data, file = "Saline_Data4SEM.csv")
 #You can load data directly from previosly saved "Saline_Data4SEM.csv"
-#Saline_Data <- read.csv("Saline_Data4SEM.csv")
+Saline_Data <- read.csv("Saline_Data4SEM.csv")
 
 #Saline SEM===========
-#Compare two models to find bst fit:
+#Compare models to find best fit: (Best fit model follwoing backward selection on Apriori Model (see line 15))
 #1:
 Other_Model <-'
 #regressions:
@@ -474,14 +566,13 @@ semPaths(fit_Other_Model,"est", intercepts = F, fade = F,
          edge.label.position = 0.25, nCharNodes=6,
          residuals =  F, exoCov = F)
 
-#Best fit model follwoing backward selection on Apriori Model (see line 15):
 #2:
 model_Saline <- '
 #regressions:
 #regressions:
 NatRich     ~ Depth + Soil 
-Native      ~ Depth + Flood  + Soil 
-Alien       ~ Depth + Flood  + Soil 
+Native      ~ Depth + Soil 
+Alien       ~ Depth + Soil 
 NatComp     ~  NatRich + Native
 
 #covariances:
@@ -491,30 +582,45 @@ Native ~~ 0*NatComp
 fit_Saline <- sem(model_Saline,missing="direct",estimator="ML",data=Saline_Data)
 summary(fit_Saline, fit.measures=TRUE, rsquare=T)
 
-AIC(fit_Saline, fit_Other_Model)#the Other_Model seems working well:
+semPaths(fit_Saline,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.1,sizeMan = 8,
+         edge.label.position = 0.25, nCharNodes=6,
+         residuals =  F, exoCov = F)
+
+
+#3:
+model_Saline3 <- '
+#regressions
+NatRich     ~  Soil
+Native      ~ Depth  + Soil
+NatComp     ~ Depth  + Soil
+
+#covariances:
+NatComp ~~ NatRich
+Native ~~ NatComp
+Native ~~ NatRich
+'
+
+AIC(fit_Saline, fit_Other_Model,fit_Saline3 )#the Other_Model seems working well:
 ###              df      AIC
-#fit_Saline      19 922.3962
+#fit_Saline      17 971.9086 #Best Fit = Printed.
 #fit_Other_Model 12 794.5944
+#fit_Saline3     14 790.9772
 
 #Design layout of nodes manually for semPaths:
 laySaline<-matrix(c(-0.5,  -0.5,
                     0.5,  -0.5,
-                    0,     0.10,    #Alien Position
-                    0,    -0.35,
-                    0,     0.5,
-                    0.5,   0.5, 
-                    -0.5,   0.5 ),  ncol=2,byrow=TRUE)
+                    0,     -0.3,    #NatComp Position
+                    -0.5,    0.5,
+                    0.5,     0.5),  ncol=2,byrow=TRUE)
 
-semPaths(fit_Saline,"est", intercepts = F, fade = F, 
-         title = T, edge.label.cex = 1.1,sizeMan = 8,
-         edge.label.position = 0.25, nCharNodes=6, layout = laySaline,
-         residuals =  F, exoCov = F)
+semPaths(fit_Saline3,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.3,sizeMan = 12,
+         edge.label.position = 0.2, nCharNodes=6, layout = laySaline,
+         residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
+         color=c("lightblue","yellow","lightgreen"),
+         groups=grps, legend = F)
 title("Saline path analysis (2007-2017, P<0.05)")
-
-
-
-
-
 
 
 #Checking relationships in Data========
