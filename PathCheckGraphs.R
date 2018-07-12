@@ -112,3 +112,11 @@ s4 = ggplot(Saline_Data,aes(x=floodedpercent,y=Native_Cover ))+
 
 grid.arrange(s1,s2,s3,s4, ncol = 2)
 
+#Is Depth meanwaterdepthcm to floodedpercent=======
+VegAllEnvData <- read.csv("VegAllEnvData_03july2018.csv")
+#Run Correlation test:
+cor.test(VegAllEnvData$meanwaterdepthcm, VegAllEnvData$floodedpercent) #0.9258418 !
+#Plot the correlation:
+ggplot(VegAllEnvData,aes(x=floodedpercent,y=meanwaterdepthcm ))+
+  geom_point()+ geom_line(stat="smooth",method = "lm",size=.8)+
+  ggtitle ("R2=0.92, P < 0.001") +theme_minimal()
