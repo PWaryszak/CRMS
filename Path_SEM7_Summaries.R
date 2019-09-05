@@ -44,6 +44,97 @@ NatComp ~~ 0*NatRich
 Native  ~~ 0*NatComp
 '
 fit_Freshwater <- sem(model_Freshwater,missing="direct",estimator="ML",data=Freshwater_Data)
+summary(fit_Freshwater, fit.measures=TRUE, rsquare=T) 
+#lavaan 0.6-3 ended normally after 24 iterations
+#Optimization method                           NLMINB
+Number of free parameters                         15
+
+Number of observations                            42
+Number of missing patterns                         1
+
+Estimator                                         ML
+Model Fit Test Statistic                       7.524
+Degrees of freedom                                 6
+P-value (Chi-square)                           0.275
+
+Model test baseline model:
+  
+  Minimum Function Test Statistic               78.930
+Degrees of freedom                                15
+P-value                                        0.000
+
+User model versus baseline model:
+  
+  Comparative Fit Index (CFI)                    0.976
+Tucker-Lewis Index (TLI)                       0.940
+
+Loglikelihood and Information Criteria:
+  
+  Loglikelihood user model (H0)               -141.565
+Loglikelihood unrestricted model (H1)       -137.803
+
+Number of free parameters                         15
+Akaike (AIC)                                 313.131
+Bayesian (BIC)                               339.196
+Sample-size adjusted Bayesian (BIC)          292.223
+
+Root Mean Square Error of Approximation:
+  
+  RMSEA                                          0.078
+90 Percent Confidence Interval          0.000  0.225
+P-value RMSEA <= 0.05                          0.339
+
+Standardized Root Mean Square Residual:
+  
+  SRMR                                           0.050
+
+Parameter Estimates:
+  
+  Information                                 Observed
+Observed information based on                Hessian
+Standard Errors                             Standard
+
+Regressions:
+  Estimate  Std.Err  z-value  P(>|z|)
+NatRich ~                                           
+  Depth            -1.110    0.315   -3.527    0.000
+Flood             0.950    0.315    3.018    0.003
+Native ~                                            
+  Depth            -1.092    0.240   -4.546    0.000
+Flood             0.870    0.233    3.740    0.000
+Soil             -0.355    0.099   -3.570    0.000
+Alien            -0.507    0.094   -5.381    0.000
+NatComp ~                                           
+  Soil              0.439    0.134    3.262    0.001
+Alien             0.400    0.134    2.974    0.003
+
+Covariances:
+  Estimate  Std.Err  z-value  P(>|z|)
+.NatRich ~~                                          
+  .NatComp           0.000                           
+.Native ~~                                           
+  .NatComp           0.000                           
+.NatRich ~~                                          
+  .Native            0.198    0.090    2.205    0.027
+
+Intercepts:
+  Estimate  Std.Err  z-value  P(>|z|)
+.NatRich          -0.000    0.134   -0.000    1.000
+.Native            0.000    0.094    0.000    1.000
+.NatComp          -0.000    0.130   -0.000    1.000
+
+Variances:
+  Estimate  Std.Err  z-value  P(>|z|)
+.NatRich           0.751    0.164    4.583    0.000
+.Native            0.373    0.082    4.536    0.000
+.NatComp           0.706    0.154    4.583    0.000
+
+R-Square:
+  Estimate
+NatRich           0.231
+Native            0.590
+NatComp           0.276
+>>>>>>> 129b4ac6bee02d084da1d79ce4613548523d1e5e
 #Produce SemPaths FIGURE with Nodes:
 semPaths(fit_Freshwater ,"est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.3,sizeMan = 12,edge.labels=FALSE,
@@ -145,7 +236,6 @@ NatRich           0.231
 Native            0.590
 NatComp           0.276
 
-
 #Intermediate SEM ========
 #You can load data directly from previosly saved "Intermediate_Data4SEM.csv" (See Path_SEM4 for details)
 Intermediate_Data <- read.csv("Intermediate_Data4SEM.csv")
@@ -210,6 +300,7 @@ Root Mean Square Error of Approximation:
   RMSEA                                          0.177
 90 Percent Confidence Interval          0.000  0.442
 P-value RMSEA <= 0.05                          0.120
+<<<<<<< HEAD
 
 Standardized Root Mean Square Residual:
   
@@ -263,8 +354,66 @@ NatRich           0.208
 Native            0.348
 Alien             0.103
 NatComp           0.433
+=======
+
+Standardized Root Mean Square Residual:
+  
+  SRMR                                           0.042
+>>>>>>> 129b4ac6bee02d084da1d79ce4613548523d1e5e
+
+Parameter Estimates:
+  
+  Information                                 Observed
+Observed information based on                Hessian
+Standard Errors                             Standard
+
+<<<<<<< HEAD
+=======
+Regressions:
+  Estimate  Std.Err  z-value  P(>|z|)
+NatRich ~                                           
+  Soil             -0.456    0.119   -3.831    0.000
+Native ~                                            
+  Soil             -0.585    0.110   -5.326    0.000
+Alien            -0.353    0.093   -3.784    0.000
+Alien ~                                             
+  Soil             -0.321    0.127   -2.541    0.011
+NatComp ~                                           
+  Soil              0.379  299.844    0.001    0.999
+NatRich          -0.421  657.936   -0.001    0.999
+
+Covariances:
+  Estimate  Std.Err  z-value  P(>|z|)
+.NatRich ~~                                          
+  .NatComp           0.039  511.978    0.000    1.000
+.Native ~~                                           
+  .NatComp          -0.120  239.556   -0.001    1.000
+.NatRich ~~                                          
+  .Native            0.364    0.105    3.453    0.001
+
+Intercepts:
+  Estimate  Std.Err  z-value  P(>|z|)
+.NatRich          -0.000    0.118   -0.000    1.000
+.Native            0.000    0.105    0.000    1.000
+.Alien             0.000    0.125    0.000    1.000
+.NatComp           0.000    0.100    0.000    1.000
+
+Variances:
+  Estimate  Std.Err  z-value  P(>|z|)
+.NatRich           0.778    0.147    5.292    0.000
+.Native            0.614    0.116    5.269    0.000
+.Alien             0.881    0.166    5.292    0.000
+.NatComp           0.557   50.819    0.011    0.991
+
+R-Square:
+  Estimate
+NatRich           0.208
+Native            0.348
+Alien             0.103
+NatComp           0.433
 
 
+>>>>>>> 129b4ac6bee02d084da1d79ce4613548523d1e5e
 
 #Brackish SEM=========
 #All terms significant, backward selection from full model (see "Path_SEM3" R file, line ~200)
@@ -367,6 +516,7 @@ Intercepts:
 .NatRich           0.000    0.129    0.000    1.000
 .Native            0.000    0.140    0.000    1.000
 .NatComp          -0.000    0.148   -0.000    1.000
+<<<<<<< HEAD
 
 Variances:
   Estimate  Std.Err  z-value  P(>|z|)
@@ -374,6 +524,15 @@ Variances:
 .Native            0.788    0.176    4.472    0.000
 .NatComp           0.872    0.195    4.472    0.000
 
+=======
+
+Variances:
+  Estimate  Std.Err  z-value  P(>|z|)
+.NatRich           0.665    0.149    4.472    0.000
+.Native            0.788    0.176    4.472    0.000
+.NatComp           0.872    0.195    4.472    0.000
+
+>>>>>>> 129b4ac6bee02d084da1d79ce4613548523d1e5e
 R-Square:
   Estimate
 NatRich           0.318
