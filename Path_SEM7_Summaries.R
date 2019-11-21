@@ -144,6 +144,18 @@ semPaths(fit_Freshwater ,"est", intercepts = F, fade = F,
          legend = F)
 title("Freshwater path analysis (2007-2017, P < 0.05)", line =2)
 
+#Emily's plot with new layout
+#order: NatRich, Native, NatComp,Depth, Flood, Soil, Alien
+x = c(-1, 0, 1,-1, 0, 1, 0.22)
+y = c(-1,-1,-1, 1, 1, 1, 0.1)
+ly = matrix(c(x, y), ncol=2)
+semPaths(fit_Freshwater ,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.3,sizeMan = 12,edge.labels=FALSE,
+         edge.label.position = 0.2, nCharNodes=6,
+         residuals =  F, exoCov = F, 
+         edge.label.bg = "lightyellow",
+         legend = F, layout=ly)# ,edge.color = c(1,1,1,1,1,1,2,2,2) #I can't really figure this out, I would import the figure into illustrator or something to change arrow color so that arrows pointing to or from native comp are black so that they don't impart a good/bad connotation to the reviewer
+
 
 summary(fit_Freshwater, fit.measures=TRUE, rsquare=T) 
 #lavaan 0.6-3 ended normally after 24 iterations
@@ -555,6 +567,23 @@ NatComp ~~ 0*NatRich
 Native ~~ 0*NatComp
 '
 fit_Saline <- sem(model_Saline,missing="direct",estimator="ML",data=Saline_Data)
+
+
+#emily trying this, i don't know why you treated this differently than the others, having natrich and native affct native comp, also I took alien out since there are only like 2 plots with aliens in them?? The RMSEA is 0.08 which isn't awesom, and the model includes a nonsig parameter. I would probalby include nonsig parameters in order to make the RMSEA better (you can also use AIC to justify including a non sig parameter), just don't include them in the path diagrams.
+model_Saline <- '
+#regressions:
+NatRich     ~ Depth+Soil   
+Native      ~ Depth + Soil
+NatComp     ~  Soil
+
+#covariances:
+NatRich ~~ Native
+NatComp ~~ NatRich
+Native  ~~  NatComp
+'
+fit_Saline <- sem(model_Saline,missing="direct",estimator="ML",data=Saline_Data)
+summary(fit_Saline,fit.measures=T,rsquare=T)
+
 
 semPaths(fit_Saline,"est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.1,sizeMan = 8,
