@@ -53,12 +53,12 @@ Freshwater_Plant_Sp <- data.frame( specCode = topID1)
 Plant_List<- subset(Plant_Info, select = c(specCode, nat))
 Freshwater_Plants <- left_join(Freshwater_Plant_Sp,Plant_List, by = "specCode")
 
-#Select natives only from Freshwater.av and compute their total cover:
+#Pick natives only from Freshwater.av and compute their total cover:
 Freshwater_Native.Species <- filter(Freshwater_Plants, nat == "native")#228 native species
 Freshwater.av.veg.native <- subset( FreshwaterAV, select = unique(Freshwater_Native.Species$specCode))
 Freshwater.av.veg.native.total <- rowSums (Freshwater.av.veg.native) #create extra column with total cover of all natives
 
-#Subset introduced only from Freshwater.av and compute their total cover::
+#Pick introduced only from Freshwater.av and compute their total cover::
 Freshwater_introduced.Species <- filter(Freshwater_Plants, nat == "introduced")
 Freshwater.av.veg.introduced <- subset( FreshwaterAV, select = unique(Freshwater_introduced.Species$specCode))
 Freshwater.av.veg.introduced.total <- rowSums (Freshwater.av.veg.introduced)#Extra column = total cover of introduced species per site
@@ -74,12 +74,31 @@ Freshwater.av.env$Introduced_Cover <- Freshwater.av.veg.introduced.total
 Freshwater.av.env$Native_Cover     <- Freshwater.av.veg.native.total
 Freshwater.av.env$Native_Richness  <- Freshwater_Native_Richness 
 
-#Run PCoA on NatComp (composition of native-only plant species):
-Freshwater_distance <- vegdist(Freshwater.av.veg.native  , "bray")
-Freshwater.pca <- cmdscale(Freshwater_distance , eig = TRUE)
 
-#Combine PCA (NatComp) and env data together:
-coordinates<-as.data.frame(Freshwater.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
+#(Per Emily's Comment, 1/jan/2020) in NMDS ordinations, the axes don’t mean anything 
+#(the ordination can be rotated any which way).
+#Using PCoA however, axis 1 is the axis that explains most of the
+#variation and you can calculate how important it is. 
+#If it is not too insane, it might be nice to do PCoA 
+#instead of NMDS and report the variance explained by Axis 1 
+#so we can argue that one axis is enough to represent changes in
+#species comp. you can do this with:
+
+#Remove columns with only one record:
+#Emily's comment (Jan2020): The other thing I typically do when I do ordinations is I remove species that are only found in 1 or sometimes even 2 plots. They don't really contribute much to pattens in the data, they just add a lot of noise, (for example, if a species is only present in 1 plot, it is just going to make that plot dissimilar to everything else), so that may be why your percent explained for axis 1 is low, although 23% isn't too bad. You could try taking out those species that are only present in 1 or 2 plots and see if that changes things greatly.
+Freshwater.av.veg.native1<- Freshwater.av.veg.native [  , colSums(Freshwater.av.veg.native > 0) > 1]#Remove plots/species with less than 1 record in them
+dim(Freshwater.av.veg.native) ; dim(Freshwater.av.veg.native1)
+# 42 162
+# 42 228 = 162 columns left out of 228
+
+#Run PCoa:
+mc_fresh<-capscale(Freshwater.av.veg.native1 ~ 1, distance="bray")#This produces a PCoA, (principle coordinates analysis, otherwise known as metric multidimensional scaling).
+#PCA is not great to use with species comp data b/c it uses euclidean distance which essentially means that if two plots both have 0 for a species it calls them similar. Bray dissimilarity fixes this and only uses species that are present in the plots to calculate similarity/dissimilarity. 
+plot(mc_fresh,display= "sites", main ="Capscale on Freshwater Communities")
+coordinates<-as.data.frame(scores(mc_fresh)$sites) #get MDS1 and 2
+plot(coordinates)
+
+#Combine PCoA (NatComp) and env data together:
 Freshwater_Data<-cbind(coordinates, Freshwater.av.env)
 
 #Standarize the variables so their effect size are comparable:
@@ -87,12 +106,12 @@ Freshwater_Data$TotRich     <- scale (Freshwater_Data$richness)
 Freshwater_Data$NatRich     <- scale (Freshwater_Data$Native_Richness)
 Freshwater_Data$Soil        <- scale (Freshwater_Data$Mean_SoilSalinity)
 Freshwater_Data$Alien       <- scale (Freshwater_Data$Introduced_Cover)
-Freshwater_Data$Native      <- scale (Freshwater_Data$Native_Cover)
-Freshwater_Data$NatComp <- scale (Freshwater_Data$V1)
+Freshwater_Data$NatCov      <- scale (Freshwater_Data$Native_Cover)
+Freshwater_Data$NatComp     <- scale (Freshwater_Data$MDS1)
 Freshwater_Data$Flood       <- scale (Freshwater_Data$floodedpercent)
 Freshwater_Data$Depth       <- scale (Freshwater_Data$meanwaterdepthcm)
 Freshwater_Data$Depth_SD    <- scale (Freshwater_Data$meanwaterdepthcm_SD)
-#write.csv(Freshwater_Data, file = "Freshwater_Data4SEM.csv")
+write.csv(Freshwater_Data, file = "Freshwater_Data4SEM_PCoa.csv", row.names = F)
 
 #Freshwater SEM:=========
 #You can load data directly from previosly saved "Freshwater_Data4SEM.csv"
@@ -231,11 +250,18 @@ Intermediate.av.env$Introduced_Cover <- Intermediate.av.veg.introduced.total
 Intermediate.av.env$Native_Cover     <- Intermediate.av.veg.native.total
 Intermediate.av.env$Native_Richness  <- Intermediate_Native_Richness 
 
+#Remove columns with only one record:
+Intermediate.av.veg.native1<- Intermediate.av.veg.native [  , colSums(Intermediate.av.veg.native > 0) > 1]#Remove plots/species with less than 1 record in them
+dim(Intermediate.av.veg.native) ; dim(Intermediate.av.veg.native1)
+#[1]  56 154
+#[1]  56 103
+
 #Run PCoA:
-Intermediate_distance <- vegdist(Intermediate.av.veg.native , "bray")
-Intermediate.pca <- cmdscale(Intermediate_distance , eig = TRUE)
-#Combine PCA (NatComp) and env data together:
-coordinates<-as.data.frame(Intermediate.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
+mc_Intermediate<-capscale(Intermediate.av.veg.native1 ~ 1, distance="bray")#This produces a PCoA, (principle coordinates analysis, otherwise known as metric multidimensional scaling).
+#PCA is not great to use with species comp data b/c it uses euclidean distance which essentially means that if two plots both have 0 for a species it calls them similar. Bray dissimilarity fixes this and only uses species that are present in the plots to calculate similarity/dissimilarity. 
+coordinates<-as.data.frame(scores(mc_Intermediate)$sites) #get MDS1 and 2
+plot(coordinates)
+#Combine PCoA (NatComp) and env data together:
 Intermediate_Data<-cbind(coordinates, Intermediate.av.env)
 
 #Standarize the variables so their effect size are comparable:
@@ -243,13 +269,13 @@ Intermediate_Data$TotRich     <- scale (Intermediate_Data$richness)
 Intermediate_Data$NatRich     <- scale (Intermediate_Data$Native_Richness)
 Intermediate_Data$Soil        <- scale (Intermediate_Data$Mean_SoilSalinity)
 Intermediate_Data$Alien       <- scale (Intermediate_Data$Introduced_Cover)
-Intermediate_Data$Native      <- scale (Intermediate_Data$Native_Cover)
-Intermediate_Data$NatComp <- scale (Intermediate_Data$V1)
+Intermediate_Data$NatCov      <- scale (Intermediate_Data$Native_Cover)
+Intermediate_Data$NatComp     <- scale (Intermediate_Data$MDS1)
 Intermediate_Data$Flood       <- scale (Intermediate_Data$floodedpercent)
 Intermediate_Data$Depth       <- scale (Intermediate_Data$meanwaterdepthcm)
 Intermediate_Data$Depth_SD    <- scale (Intermediate_Data$meanwaterdepthcm_SD)
 
-#write.csv(Intermediate_Data, file = "Intermediate_Data4SEM.csv")
+write.csv(Intermediate_Data, file = "Intermediate_Data4SEM_PCoA.csv", row.names = F)
 #You can load data directly from previosly saved "Intermediate_Data4SEM.csv"
 Intermediate_Data <- read.csv("Intermediate_Data4SEM.csv")
 
@@ -369,24 +395,33 @@ BrackishAV.env$Native_Cover     <- BrackishAV.veg.native.total
 BrackishAV.env$Native_Richness  <- Brackish_Native_Richness 
 
 #Run PCoA:
-Brackish_distance <- vegdist(BrackishAV.veg.native  , "bray")
-Brackish.pca <- cmdscale(Brackish_distance , eig = TRUE)
-#Combine PCA (NatComp) and env data together:
-coordinates<-as.data.frame(Brackish.pca$points[,1:2]) #get MDS1 (x-axis Comp value)
-Brackish_Data<-cbind(coordinates, BrackishAV.env)
+#Remove columns with only one record:
+Brackish.av.veg.native1<- BrackishAV.veg.native [  , colSums(BrackishAV.veg.native > 0) > 1]#Remove plots/species with less than 1 record in them
+dim(BrackishAV.veg.native) ; dim(Brackish.av.veg.native1)
+#[1] 40 70
+#[1] 40 49
+
+#Run PCoA:
+mc_Brackish<-capscale(Brackish.av.veg.native1 ~ 1, distance="bray")#This produces a PCoA, (principle coordinates analysis, otherwise known as metric multidimensional scaling).
+#PCA is not great to use with species comp data b/c it uses euclidean distance which essentially means that if two plots both have 0 for a species it calls them similar. Bray dissimilarity fixes this and only uses species that are present in the plots to calculate similarity/dissimilarity. 
+plot(mc_Brackish,display= "sites", main ="Capscale on Brackish Communities")
+coordinates<-as.data.frame(scores(mc_Brackish)$sites) #get MDS1 and 2
+
+#Combine PCoA (NatComp) and env data together:
+Brackish_Data<-cbind(coordinates,BrackishAV.env)
 
 #Standarize the variables so their effect size are comparable:
 Brackish_Data$TotRich     <- scale (Brackish_Data$richness)
 Brackish_Data$NatRich     <- scale (Brackish_Data$Native_Richness)
 Brackish_Data$Soil        <- scale (Brackish_Data$Mean_SoilSalinity)
 Brackish_Data$Alien       <- scale (Brackish_Data$Introduced_Cover)
-Brackish_Data$Native      <- scale (Brackish_Data$Native_Cover)
-Brackish_Data$NatComp     <- scale (Brackish_Data$V1)
+Brackish_Data$NatCov      <- scale (Brackish_Data$Native_Cover)
+Brackish_Data$NatComp     <- scale (Brackish_Data$MDS1)
 Brackish_Data$Flood       <- scale (Brackish_Data$floodedpercent)
 Brackish_Data$Depth       <- scale (Brackish_Data$meanwaterdepthcm)
 Brackish_Data$Depth_SD    <- scale (Brackish_Data$meanwaterdepthcm_SD)
 
-#write.csv(Brackish_Data, file = "Brackishr_Data4SEM.csv")
+write.csv(Brackish_Data, file = "Brackish_Data4SEM_PCoA.csv", row.names = F)
 #All terms significant, backward selection from full model (see "Path_SEM3" R file, line ~200)
 #You can load data directly from previosly saved "Brackish_Data4SEM.csv"
 #Brackish_Data <- read.csv("Brackish_Data4SEM.csv")
