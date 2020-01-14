@@ -48,15 +48,20 @@ summary(fit_Apriori_Model)
 #Load data directly from previosly saved "Freshwater_Data4SEM.csv" (See Path_SEM4 for details)
 Freshwater_Data <- read.csv("Freshwater_Data4SEM_PCoa.csv")
 #Best fit model follwoing backward selection on Apriori Model (see line 15):
+
+
 model_Freshwater <- '
 #regressions:
-NatCov      ~ Depth + Soil + Alien
-NatComp     ~ Soil + Alien 
+NatCov      ~  Soil + Alien
+NatComp     ~  Soil + Alien
+NatRich     ~    Soil
 
 #covariances:
 NatComp ~~ 0*NatRich
 NatCov  ~~ 0*NatComp
+#NatCov  ~~ 0*NatRich
 '
+
 fit_Freshwater <- sem(model_Freshwater,missing="direct",estimator="ML",data=Freshwater_Data)
 summary(fit_Freshwater, fit.measures=TRUE, rsquare=T) 
 
@@ -72,7 +77,7 @@ title("Freshwater path analysis (2007-2017, P < 0.05)", line =2)
 #Emily's plot with new layout
 #order: NatCov, NatComp,Depth, Soil, Alien
 x = c(-1, 0, 1,-1, 0)
-y = c(-1,-1, 1, 1, 1)
+y = c(-1,-1, -1, 1, 1)
 ly = matrix(c(x, y), ncol=2)
 semPaths(fit_Freshwater ,"est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.3,sizeMan = 12,edge.labels=FALSE,
@@ -89,19 +94,20 @@ summary(fit_Freshwater, fit.measures=TRUE, rsquare=T)
 #You can load data directly from previosly saved "Intermediate_Data4SEM.csv" (See Path_SEM4 for details)
 Intermediate_Data <- read.csv("Intermediate_Data4SEM_PCoA.csv")
 #Pick Best fit model following backward selection on Apriori Model (see line 15):
+
 model_Intermediate2 <- '
 #regressions:
-NatRich     ~  Soil 
-NatCov      ~  Soil + Alien
-Alien       ~  Soil 
-NatComp     ~  Soil 
+NatRich     ~  Soil  + Alien
+NatCov      ~  Soil  + Alien
+Alien       ~  Soil
+NatComp     ~  Soil  
 
 #covariances:
-NatComp ~~ 0* NatRich
-NatCov ~~ 0* NatComp
-NatCov ~~ 0* NatRich
-
+#NatComp ~~ 0* NatRich
+#NatCov ~~ 0* NatComp
+#NatCov ~~ 0* NatRich
 '
+
 fit_Intermediate2 <- sem(model_Intermediate2,missing="direct",estimator="ML",data=Intermediate_Data)
 
 x = c( 1, -1, 1, 0, 0)
@@ -120,43 +126,39 @@ summary(fit_Intermediate2, fit.measures=TRUE, rsquare=T)
 #Brackish SEM=========
 #All terms significant, backward selection from full model (see "Path_SEM3" R file, line ~200)
 #You can load data directly from previosly saved "Brackish_Data4SEM.csv"
-Brackish_Data <- read.csv("Brackish_Data4SEM.csv")
 
 #Best fit model follwoing backward selection on Apriori Model (see line 15):
 Brackish_Data <- read.csv("Brackish_Data4SEM_PCoA.csv")
+
 model_Brackish3 <- '
 #regressions:
 NatRich     ~  Depth  + Soil
-NatCov      ~  Depth 
-NatComp     ~  Soil
+NatCov      ~  Depth
+#NatComp     ~    Soil
 
 #covariances:
-NatComp ~~ 0*NatRich
-NatCov ~~ 0*NatComp
+#NatComp ~~ 0*NatRich
+#NatCov ~~ 0*NatComp
 NatRich ~~ 0*NatCov
-Depth  ~~ 1* Soil
 '
+
 fit_Brackish3 <- sem(model_Brackish3,missing="direct",estimator="ML",data=Brackish_Data)
+
 summary(fit_Brackish3)
 
 #Plot Brackish SEM:
-x = c(-1, 0, 1,-1, 0)
-y = c(-1,-1, -1, 1, 1)
-ly = matrix(c(x, y), ncol=2)
-
 semPaths(fit_Brackish3,"est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.3,sizeMan = 12,
          edge.label.position = 0.15, nCharNodes=6,
          residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
-         legend = F, layout = ly)
+         legend = F)
 title("Brackish")
-
-summary(fit_Brackish3, fit.measures=TRUE, rsquare=T) 
 
 #Saline SEM===========
 #You can load data directly from previosly saved "Saline_Data4SEM.csv"
 Saline_Data <- read.csv("Saline_Data4SEM_PCoA.csv")
 #Compare models to find best fit: (Best fit model follwoing backward selection on Apriori Model (see line 15))
+
 model_Saline <- '
 #regressions:
 #regressions:
@@ -205,18 +207,48 @@ semPaths(fit_Saline,"est", intercepts = F, fade = F,
 title("Saline")
 
 #Bind all Figures together=========
-par(mfrow = c(1,1))
-ly = matrix(c(x, y), ncol=2)
+layout(t(1:2))
+
+#1 fresh
+x = c( 1, -1, 1, 0, 0)
+y = c(-1,-1, 1, -1, 1)
+ly1 = matrix(c(x, y), ncol=2)
 semPaths(fit_Freshwater ,"est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.3,sizeMan = 12,edge.labels=FALSE,
          edge.label.position = 0.2, nCharNodes=6,
          residuals =  F, exoCov = F, 
          edge.label.bg = "lightyellow",
-         legend = F, layout=ly)# ,edge.color = c(1,1,1,1,1,1,2,2,2) #I can't really figure this out, I would import the figure into illustrator or something to change arrow color so that arrows pointing to or from native comp are black so that they don't impart a good/bad connotation to the reviewer
+         legend = F, layout=ly1)# ,edge.color = c(1,1,1,1,1,1,2,2,2) #I can't really figure this out, I would import the figure into illustrator or something to change arrow color so that arrows pointing to or from native comp are black so that they don't impart a good/bad connotation to the reviewer
+title("Fresh", line =2)
+
+#Plot2
+x = c( 1, -1, 1, 0, 0)
+y = c(-1,-1, 1, -1, 1)
+ly2 = matrix(c(x, y), ncol=2)
+semPaths(fit_Intermediate2,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.3,sizeMan = 12,
+         edge.label.position = 0.15, nCharNodes=6,
+         residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
+         legend = F, layout = ly2)
+title("Intermediate ")
+
+#Plot3
+#Plot Brackish SEM:
+semPaths(fit_Brackish3,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 1.3,sizeMan = 12,
+         edge.label.position = 0.15, nCharNodes=6,
+         residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
+         legend = F)
+title("Brackish")
+
+#Plot4
+x = c( 1, 0,-1, 1, -1)
+y = c(-1,-1, -1, 1, 1)
+ly4 = matrix(c(x, y), ncol=2)
 
 semPaths(fit_Saline,"est", intercepts = F, fade = F, 
-         title = T, edge.label.cex = 2.1,sizeMan = 18,
+         title = T, edge.label.cex = 1.3,sizeMan = 12,
          edge.label.position = 0.25, nCharNodes=6,
-         residuals =  F, exoCov = F)
+         residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
+         legend = F, layout = ly4)
 title("Saline")
-
