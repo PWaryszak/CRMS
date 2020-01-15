@@ -59,7 +59,7 @@ NatRich     ~    Soil
 #covariances:
 NatComp ~~ 0*NatRich
 NatCov  ~~ 0*NatComp
-NatCov  ~~ 0*NatRich #Turned on for plotting.
+#NatCov  ~~ 0*NatRich #Turned on for plotting.
 '
 
 fit_Freshwater <- sem(model_Freshwater,missing="direct",estimator="ML",data=Freshwater_Data)
@@ -93,9 +93,9 @@ Alien       ~  Soil
 NatComp     ~  Soil  
 
 #covariances:
-NatComp ~~ 0* NatRich #Turned on for plotting
-NatCov ~~ 0* NatComp  #Turned on for plotting
-NatCov ~~ 0* NatRich  ##Turned on for plotting
+#NatComp ~~ 0* NatRich #Turned on for plotting
+#NatCov ~~ 0* NatComp  #Turned on for plotting
+#NatCov ~~ 0* NatRich  #Turned on for plotting
 '
 
 fit_Intermediate2 <- sem(model_Intermediate2,missing="direct",estimator="ML",data=Intermediate_Data)
@@ -168,15 +168,15 @@ NatCov      ~  Depth +Soil
 NatComp ~ Soil
 
 #covariances:
-#NatComp ~~ 0*NatRich
-#NatCov ~~ 0*NatComp
-#NatRich ~~ 0*NatCov
+#NatComp ~~ 0*NatRich #Turned on for plotting
+#NatCov ~~ 0*NatComp  #Turned on for plotting
+#NatRich ~~ 0*NatCov  #Turned on for plotting
 '
 
 fit_Saline <- sem(model_Saline,missing="direct",estimator="ML",data=Saline_Data)
 summary(fit_Saline,fit.measures=T,rsquare=T)
 
-x4 = c( 1, 0,-1, 1, -1)
+x4 = c( 1, 0, -1, -1, 1)
 y4 = c(-1,-1, -1, 1, 1)
 ly4 = matrix(c(x4, y4), ncol=2)
 
@@ -231,9 +231,9 @@ semPaths(fit_Brackish3,"est", intercepts = F, fade = F,
 title("Brackish")
 
 #Plot4
-x = c( 1, 0,-1, 1, -1)
-y = c(-1,-1, -1, 1, 1)
-ly4 = matrix(c(x, y), ncol=2)
+x4 = c( 1, 0, -1, -1, 1)
+y4 = c(-1,-1, -1, 1, 1)
+ly4 = matrix(c(x4, y4), ncol=2)
 
 semPaths(fit_Saline,"est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.3,sizeMan = 12,
