@@ -51,16 +51,16 @@ summary(lm(introduced_Cover ~ Mean_SoilSalinity,data=Freshwater_Data))#0.00129 *
 
 
 data1<-Freshwater_Data %>%
-  mutate(Salinity = Mean_SoilSalinity,
-         Introduced = introduced_Cover,
-         Water = meanwaterdepthcm) %>%
-  select(Salinity,Introduced, Water, Native_Cover )%>%
+  mutate(Soil_Salinity = Mean_SoilSalinity,
+         Introduced_Cover = introduced_Cover,
+         Water_Depth = meanwaterdepthcm) %>%
+  select(Soil_Salinity,Introduced_Cover, Water_Depth, Native_Cover )%>%
   gather(category, values,-Native_Cover) 
 
 #plot1==========
 plot1 <- ggplot(data1,aes(x=values, y=Native_Cover, group=category, color = category))+
   labs(x = "",y="Freshwater Native Cover (%)")+
-  geom_point() + geom_smooth(method = "lm") +
+  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
   #geom_line(stat="smooth",method = "lm",size=.8)+
   facet_wrap(~category,scales="free") + 
   theme(legend.position = "none")
@@ -117,16 +117,16 @@ summary(lm(introduced_Cover ~ Mean_SoilSalinity,data=Intermediate_Data))#1.04e-0
 
 
 data2<-Intermediate_Data %>%
-  mutate(Salinity = Mean_SoilSalinity,
-         Introduced = introduced_Cover,
-         Water = meanwaterdepthcm) %>%
-  select(Salinity,Introduced, Water, Native_Cover )%>%
+  mutate(Soil_Salinity = Mean_SoilSalinity,
+         Introduced_Cover = introduced_Cover,
+         Water_Depth = meanwaterdepthcm) %>%
+  select(Soil_Salinity,Introduced_Cover, Water_Depth, Native_Cover )%>%
   gather(category, values,-Native_Cover) 
 
 #plot2=======
 plot2 <- ggplot(data2,aes(x=values, y=Native_Cover, group=category, color = category))+
   labs(x = "",y="Intermediate Native Cover (%)")+
-  geom_point() + geom_smooth(method = "lm") +
+  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
   #geom_line(stat="smooth",method = "lm",size=.8)+
   facet_wrap(~category,scales="free") + 
   theme(legend.position = "none")
@@ -139,6 +139,7 @@ p2 <- plot2  + facet_wrap_custom(~category, scales = "free", ncol = 3, scale_ove
   scale_override(2, scale_x_continuous(limits = c(0, 20))),
   scale_override(3, scale_x_continuous(limits = c(-40, 60)))))
 
+p2
 #Brackish:==========
 #Figures for looking at relationships between the different variables
 #in the path analysis
@@ -183,16 +184,16 @@ summary(lm(Native_Cover ~ Mean_SoilSalinity,data=Brackish_Data))#0.00171 **
 summary(lm(Native_Cover ~ meanwaterdepthcm,data=Brackish_Data))#<2e-16 ***
 
 data3<-Brackish_Data %>%
-  mutate(Salinity = Mean_SoilSalinity,
-         Introduced = introduced_Cover,
-         Water = meanwaterdepthcm) %>%
-  select(Salinity, Water, Native_Cover )%>%
+  mutate(Soil_Salinity = Mean_SoilSalinity,
+         introduced_Cover = introduced_Cover,
+         Water_Depth = meanwaterdepthcm) %>%
+  select(Soil_Salinity, Water_Depth, Native_Cover )%>%
   gather(category, values,-Native_Cover) 
 
 #plot3=======
 plot3 <- ggplot(data3,aes(x=values, y=Native_Cover, group=category, color = category))+
   labs(x = "",y="Brackish Native Cover (%)")+
-  geom_point() + geom_smooth(method = "lm") +
+  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
   scale_color_manual(values =  c("#00BA38", "#619CFF"))+
   geom_line(stat="smooth",method = "lm",size=.8)+
   facet_wrap(~category,scales="free") + 
@@ -251,16 +252,16 @@ summary(lm(Native_Cover ~ meanwaterdepthcm,data=Saline_Data))# 1.61e-09 ***
 
 
 data4<-Saline_Data %>%
-  mutate(Salinity = Mean_SoilSalinity,
-         Introduced = introduced_Cover,
-         Water = meanwaterdepthcm) %>%
-  select(Salinity, Water, Native_Cover )%>%
+  mutate(Soil_Salinity = Mean_SoilSalinity,
+         Introduced_Cover = introduced_Cover,
+         Water_Depth = meanwaterdepthcm) %>%
+  select(Soil_Salinity, Water_Depth, Native_Cover )%>%
   gather(category, values,-Native_Cover) 
 
 #plot4=====
 plot4 <- ggplot(data4,aes(x=values, y=Native_Cover, group=category, color = category))+
   labs(x = "",y="Saline Native Cover (%)")+
-  geom_point() + geom_smooth(method = "lm") +
+  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
   scale_color_manual(values =  c("#00BA38", "#619CFF"))+
   #geom_line(stat="smooth",method = "lm",size=.8)+
   facet_wrap(~category,scales="free") + 
@@ -282,8 +283,8 @@ grid.arrange(plot1, plot3,plot2,plot4, ncol = 2 )
 
 g <- arrangeGrob(plot1,plot3,plot2,plot4, nrow=2) #generates g
 
-ggsave(g, filename = "10PanelsFigure_RawData.jpeg", 
-       width = 21, 
+ggsave(g, filename = "10PanelsFigure_RawData_FullLabels.jpeg", 
+       width = 22, 
        height = 15,
        units = "cm",
        dpi = 600)
@@ -293,8 +294,110 @@ grid.arrange(p1, p3,p2,p4, ncol = 2 )
 
 g_even <- arrangeGrob(p1, p3,p2,p4, nrow=2) #generates g
 
-ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData.jpeg", 
-       width = 21, 
+ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels.jpeg", 
+       width = 22, 
        height = 15,
        units = "cm",
        dpi = 600)
+
+
+#Introdued_Cover vs Salinity=====
+#ADD A FIG with 4 panels showing invasive cover vs salinity 
+#and water depth in fresh and intermediate marshes.
+
+
+#Introdued_Cover vs Salinity=====
+#ADD A FIG with 4 panels showing invasive cover vs salinity 
+#and water depth in fresh and intermediate marshes.
+
+#i2, intermediate=====
+#Check the relationship:
+summary(lm(introduced_Cover ~ Mean_SoilSalinity,data=Intermediate_Data))#2e-16 ***
+summary(lm(introduced_Cover ~ meanwaterdepthcm,data=Intermediate_Data))# 0.473 
+
+#Subset environ variables to plot:
+intro_data2<-Intermediate_Data %>%
+  mutate(Soil_Salinity = Mean_SoilSalinity,
+         Introduced_Cover = introduced_Cover,
+         Water_Depth = meanwaterdepthcm) %>%
+  select(Soil_Salinity, Water_Depth, Introduced_Cover )%>%
+  gather(category, values,-Introduced_Cover) 
+
+intro_plot2 <- ggplot(intro_data2,aes(x=values, y=Introduced_Cover, group=category, 
+                                      color = category))+
+  labs(x = "",y="Intermediate Introduced Cover (%)")+
+  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
+  scale_color_manual(values =  c("#00BA38", "#619CFF"))+
+  #geom_line(stat="smooth",method = "lm",size=.8)+
+  facet_wrap(~category,scales="free") + 
+  theme(legend.position = "none")
+
+intro_plot2
+
+#Run FacetWrapScaleControl.R script first (to control scale)!
+i2 <- intro_plot4 + facet_wrap_custom(~category, scales = "free", ncol = 3, scale_overrides = list(
+  scale_override(1, scale_x_continuous(limits = c(0, 20))),
+  scale_override(2, scale_x_continuous(limits = c(-40, 60)))))
+i2
+
+#i3, Brackish=====
+#Check the relationship:
+summary(lm(introduced_Cover ~ Mean_SoilSalinity,data=Brackish_Data))#0.114
+summary(lm(introduced_Cover ~ meanwaterdepthcm,data=Brackish_Data))#0.482 
+
+#Subset environ variables to plot:
+intro_data3<-Brackish_Data %>%
+  mutate(Soil_Salinity = Mean_SoilSalinity,
+         Introduced_Cover = introduced_Cover,
+         Water_Depth = meanwaterdepthcm) %>%
+  select(Soil_Salinity, Water_Depth, Introduced_Cover )%>%
+  gather(category, values,-Introduced_Cover) 
+
+intro_plot3 <- ggplot(intro_data3,aes(x=values, y=Introduced_Cover, group=category, 
+                                      color = category))+
+  labs(x = "",y="Brackish Introduced Cover (%)")+
+  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
+  scale_color_manual(values =  c("#00BA38", "#619CFF"))+
+  #geom_line(stat="smooth",method = "lm",size=.8)+
+  facet_wrap(~category,scales="free") + 
+  theme(legend.position = "none")
+
+intro_plot4
+
+#Run FacetWrapScaleControl.R script first!
+i3 <- intro_plot3 + facet_wrap_custom(~category, scales = "free", ncol = 3, scale_overrides = list(
+  scale_override(1, scale_x_continuous(limits = c(0, 20))),
+  scale_override(2, scale_x_continuous(limits = c(-40, 60)))))
+i3
+
+
+
+#i4, saline=====
+#Check the relationship:
+summary(lm(introduced_Cover ~ Mean_SoilSalinity,data=Saline_Data))#2.60e-06 ***
+summary(lm(introduced_Cover ~ meanwaterdepthcm,data=Saline_Data))# 1.14e-08 ***
+
+#Subset environ variables to plot:
+intro_data4<-Saline_Data %>%
+  mutate(Soil_Salinity = Mean_SoilSalinity,
+         Introduced_Cover = introduced_Cover,
+         Water_Depth = meanwaterdepthcm) %>%
+  select(Soil_Salinity, Water_Depth, Introduced_Cover )%>%
+  gather(category, values,-Introduced_Cover) 
+
+intro_plot4 <- ggplot(intro_data4,aes(x=values, y=Introduced_Cover, group=category, 
+                                color = category))+
+  labs(x = "",y="Saline Introduced Cover (%)")+
+  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
+  scale_color_manual(values =  c("#00BA38", "#619CFF"))+
+  #geom_line(stat="smooth",method = "lm",size=.8)+
+  facet_wrap(~category,scales="free") + 
+  theme(legend.position = "none")
+
+intro_plot4
+
+#Run FacetWrapScaleControl.R script first (to control scale)!
+i4 <- intro_plot4 + facet_wrap_custom(~category, scales = "free", ncol = 3, scale_overrides = list(
+  scale_override(1, scale_x_continuous(limits = c(0, 20))),
+  scale_override(2, scale_x_continuous(limits = c(-40, 60)))))
+i4
