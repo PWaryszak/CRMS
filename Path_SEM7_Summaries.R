@@ -239,3 +239,46 @@ semPaths(fit_Saline,"est", intercepts = F, fade = F,
          residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
          legend = F, layout = ly4)
 title("Saline")
+
+
+#CLEAN PLOT = 4 PATHS======
+#Run  entire script above in Path_SEM7_Summaries.R file !!!!====
+#Bind all Figures together using this layout:====
+layout.matrix <- matrix(c(1, 2, 3, 4), nrow = 2, ncol = 2)
+
+layout(mat = layout.matrix,
+       heights = c(2, 2), # Heights of the two rows
+       widths = c(2, 2)) # Widths of the two columns
+
+#Run 4 PATHS now:========
+semPaths(fit_Freshwater ,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 2.8,sizeMan = 18,edge.labels=FALSE,
+         edge.label.position = 0.2, nCharNodes=5,
+         residuals =  F, exoCov = F, edge.color = rep(1,7),
+         edge.label.bg = "lightyellow",legend = F, layout=ly1)
+title("Freshwater", line =2, cex.main=3)
+
+
+semPaths(fit_Brackish3,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 2.8,sizeMan = 18,
+         edge.label.position = 0.15, nCharNodes=5,
+         residuals =  F, exoCov = F, edge.label.bg = "lightyellow",
+         legend = F, layout = ly3,edge.color = rep(1,3))
+title("Brackish", line =2, cex.main=3)
+
+semPaths(fit_Intermediate2,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 2.8,sizeMan = 18,
+         edge.label.position = 0.15, nCharNodes=5,
+         residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
+         legend = F, layout = ly2,edge.color = rep(1,6))
+title("Intermediate", line =2, cex.main=3)
+
+semPaths(fit_Saline,"est", intercepts = F, fade = F, 
+         title = T, edge.label.cex = 2.8,sizeMan = 18,
+         edge.label.position = 0.25, nCharNodes=5,
+         residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
+         legend = F, layout = ly4,edge.color = rep(1,4))
+title("Saline", line =2, cex.main=3)
+
+
+
