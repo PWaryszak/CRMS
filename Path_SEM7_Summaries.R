@@ -47,19 +47,20 @@ summary(fit_Apriori_Model)
 #Freshwater SEM:=========
 #Load data directly from previosly saved "Freshwater_Data4SEM.csv" (See Path_SEM4 for details)
 Freshwater_Data <- read.csv("Freshwater_Data4SEM_PCoa.csv")
+Freshwater_Data$Introduced <- Freshwater_Data$Alien
 #Best fit model follwoing backward selection on Apriori Model (see line 15):
 
 
 model_Freshwater <- '
 #regressions:
-NatCov      ~  Soil + Alien
-NatComp     ~  Soil + Alien
+NatCov      ~  Soil + Introduced 
+NatComp     ~  Soil + Introduced 
 NatRich     ~    Soil
 
 #covariances:
 NatComp ~~ 0*NatRich
 NatCov  ~~ 0*NatComp
-#NatCov  ~~ 0*NatRich #Turned on for plotting.
+NatCov  ~~ 0*NatRich #Turn on for plotting.
 '
 
 fit_Freshwater <- sem(model_Freshwater,missing="direct",estimator="ML",data=Freshwater_Data)
@@ -68,60 +69,57 @@ summary(fit_Freshwater, fit.measures=TRUE, rsquare=T)
 #Emily's plot with new layout
 #order: NatCov, NatComp,Depth, Soil, Alien
 x1 = c(-1, 0,  1, -1, 1)
-y1 = c(-1,-1, -1, 1, 1)
+y1 = c(-1,-1, -1, 1, 0)
 ly1 = matrix(c(x1, y1), ncol=2)
 semPaths(fit_Freshwater ,"est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.3,sizeMan = 12,edge.labels=FALSE,
          edge.label.position = 0.2, nCharNodes=6,
-         residuals =  F, exoCov = F, 
+         residuals =  F, exoCov = F, edge.color = rep(1,7),
          edge.label.bg = "lightyellow",
          legend = F, layout=ly1)# ,edge.color = c(1,1,1,1,1,1,2,2,2) #I can't really figure this out, I would import the figure into illustrator or something to change arrow color so that arrows pointing to or from native comp are black so that they don't impart a good/bad connotation to the reviewer
-title("Fresh", line =2)
+title("Freshwater", line =2)
 
 summary(fit_Freshwater, fit.measures=TRUE, rsquare=T) 
 
 #Intermediate SEM ========
 #You can load data directly from previosly saved "Intermediate_Data4SEM.csv" (See Path_SEM4 for details)
 Intermediate_Data <- read.csv("Intermediate_Data4SEM_PCoA.csv")
+Intermediate_Data$Introduced <- Intermediate_Data$Alien
+
 #Pick Best fit model following backward selection on Apriori Model (see line 15):
 
 model_Intermediate2 <- '
 #regressions:
-NatRich     ~  Soil  + Alien
-NatCov      ~  Soil  + Alien
-Alien       ~  Soil
+NatRich     ~  Soil  + Introduced
+NatCov      ~  Soil  + Introduced
+Introduced       ~  Soil
 NatComp     ~  Soil  
 
 #covariances:
-#NatComp ~~ 0* NatRich #Turned on for plotting
-#NatCov ~~ 0* NatComp  #Turned on for plotting
-#NatCov ~~ 0* NatRich  #Turned on for plotting
+NatComp ~~ 0* NatRich #Turn on for plotting
+NatCov ~~ 0* NatComp  #Turn on for plotting
+NatCov ~~ 0* NatRich  #Turn on for plotting
 '
 
 fit_Intermediate2 <- sem(model_Intermediate2,missing="direct",estimator="ML",data=Intermediate_Data)
-summary(fit_Intermediate2)
+summary(fit_Intermediate2, fit.measures=TRUE, rsquare=T) 
 
 x2 = c( 1, -1, 1, 0, -1)
-y2 = c(-1,-1, 1, -1, 1)
+y2 = c(-1,-1, 0, -1, 1)
 ly2 = matrix(c(x2, y2), ncol=2)
 
 semPaths(fit_Intermediate2,"est", intercepts = F, fade = F, 
          title = T, edge.label.cex = 1.3,sizeMan = 12,
          edge.label.position = 0.15, nCharNodes=6,
          residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
-         legend = F, layout = ly2)
+         legend = F, layout = ly2,edge.color = rep(1,6))
 title("Intermediate ")
 
-summary(fit_Intermediate2, fit.measures=TRUE, rsquare=T) 
 
 #Brackish SEM=========
 #All terms significant, backward selection from full model (see "Path_SEM3" R file, line ~200)
 #Best fit model follwoing backward selection on Apriori Model (see line 15):
 Brackish_Data <- read.csv("Brackish_Data4SEM_PCoA.csv")
-
-x2 = c( 1, -1, 0, 0, -1)
-y2 = c(-1,-1, 1, -1, 1)
-ly2 = matrix(c(x2, y2), ncol=2)
 
 model_Brackish3 <- '
 #regressions:
@@ -147,7 +145,7 @@ semPaths(fit_Brackish3,"est", intercepts = F, fade = F,
          title = T, edge.label.cex = 1.3,sizeMan = 12,
          edge.label.position = 0.15, nCharNodes=6,
          residuals =  F, exoCov = F, edge.label.bg = "lightyellow",
-         legend = F, layout = ly3)
+         legend = F, layout = ly3,edge.color = rep(1,3))
 title("Brackish")
 
 #Saline SEM===========
@@ -155,7 +153,7 @@ title("Brackish")
 Saline_Data <- read.csv("Saline_Data4SEM_PCoA.csv")
 #emily trying this, i don't know why you treated this differently
 #than the others, having natrich and NatCov affct NatCov comp, 
-#also I took alien out since there are only like 2 plots with aliens in them??
+#also I took Introduced out since there are only like 2 plots with Introduceds in them??
 #The RMSEA is 0.08 which isn't awesome, and the model includes a nonsig parameter. 
 #I would probalby include nonsig parameters in order to make the RMSEA better
 #(you can also use AIC to justify including a non sig parameter),
@@ -168,9 +166,9 @@ NatCov      ~  Depth +Soil
 NatComp ~ Soil
 
 #covariances:
-#NatComp ~~ 0*NatRich #Turned on for plotting
-#NatCov ~~ 0*NatComp  #Turned on for plotting
-#NatRich ~~ 0*NatCov  #Turned on for plotting
+NatComp ~~ 0*NatRich #Turn on for plotting
+NatCov ~~ 0*NatComp  #Turn on for plotting
+NatRich ~~ 0*NatCov  #Turn on for plotting
 '
 
 fit_Saline <- sem(model_Saline,missing="direct",estimator="ML",data=Saline_Data)
@@ -184,7 +182,7 @@ semPaths(fit_Saline,"est", intercepts = F, fade = F,
          title = T, edge.label.cex = 1.3,sizeMan = 12,
          edge.label.position = 0.25, nCharNodes=6,
          residuals =  F, exoCov = F,edge.label.bg = "lightyellow",
-         legend = F, layout = ly4)
+         legend = F, layout = ly4,edge.color = rep(1,4))
 title("Saline")
 
 
