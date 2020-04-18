@@ -7,7 +7,6 @@ library(gridExtra)
 library(ggpmisc)
 library(grid)
 
-
 #Figures for looking at relationships between the different variables
 #in the path analysis
 VegAllEnvData <- read.csv("VegAllEnvData_03july2018.csv")#Our Veg Data. Proccessed as per CRMS file 1,2,3,4 in Github
@@ -65,31 +64,54 @@ data1<-Freshwater_Data %>%
   select(Soil_Salinity,Introduced_Cover, Water_Depth, Native_Cover )%>%
   gather(category, values,-Native_Cover) 
 
-#plot1==========
-plot1a <- ggplot(data1[data1$category != "Water_Depth",],aes(x=values, y=Native_Cover, group=category, color = category))+
-  labs(x = "",y="Freshwater Native Cover (%)")+
-  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
-  #geom_line(stat="smooth",method = "lm",size=.8)+
+#plot1a Freshwater NatCov~Introduced_Cover======
+plot1a <- ggplot(data1[data1$category == "Introduced_Cover",],aes(x=values, y=Native_Cover, group=category))+
+  labs(x = "",y="Freshwater natie cover (%)")+
+  geom_point( aes(color = "#F8766D")) +
+  stat_smooth(method = "lm",color = "#F8766D") +
+  scale_color_manual(values =  c("#F8766D"))+
+  scale_x_continuous(limits = c(0, 100))+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                stat(r.squared), stat(p.value))),
+                  parse = TRUE)
 plot1a
 
-plot1b <- ggplot(data1[data1$category == "Water_Depth",],aes(x=values, y=Native_Cover, group=category))+
+
+#plot1b Freshwater NatCov~Soil_Salinity======
+plot1b <- ggplot(data1[data1$category == "Soil_Salinity",],aes(x=values, y=Native_Cover, group=category))+
   labs(x = "",y="")+
-  geom_point( color = "#619CFF") + #+ geom_smooth(method = "lm") +
-  #geom_line(stat="smooth",method = "lm",size=.8)+
+  geom_point( aes(color = "#00BA38")) +
+  stat_smooth(method = "lm",color = "#00BA38") +
+  scale_color_manual(values =  c("#00BA38"))+
+  scale_x_continuous(limits = c(0, 20))+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                stat(r.squared), stat(p.value))),
+                  parse = TRUE)
 plot1b
 
+#plot1c Freshwater NatCov~Water_Depth ==========
+plot1c <- ggplot(data1[data1$category == "Water_Depth",],aes(x=values, y=Native_Cover, group=category, color = category))+
+  geom_point()+
+  labs(x = "",y="")+
+  scale_color_manual(values =  c("#619CFF"))+
+  facet_wrap(~category,scales="free") + 
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))
 
-#Run FacetWrapScaleControl.R script first!
-p1<-plot1 + facet_wrap_custom(~category, scales = "free", ncol = 3, scale_overrides = list(
-    scale_override(1, scale_x_continuous(limits = c(0, 100))),
-    scale_override(2, scale_x_continuous(limits = c(0, 20))),
-    scale_override(3, scale_x_continuous(limits = c(-40, 60)))))
-    
-p1
+plot1c
+
 
 #Intermediate Native_Cover:========
 #Figures for looking at relationships between the different variables
@@ -142,26 +164,56 @@ data2<-Intermediate_Data %>%
   select(Soil_Salinity,Introduced_Cover, Water_Depth, Native_Cover )%>%
   gather(category, values,-Native_Cover) 
 
-#plot2=======
-plot2 <- ggplot(data2,aes(x=values, y=Native_Cover, group=category, color = category))+
-  labs(x = "",y="Intermediate Native Cover (%)")+
-  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
-  #geom_line(stat="smooth",method = "lm",size=.8)+
+#plot2a Intermediate NatCov~Introduced_Cover======
+plot2a <- ggplot(data2[data2$category == "Introduced_Cover",],aes(x=values, y=Native_Cover, group=category))+
+  labs(x = "",y="")+
+  geom_point( aes(color = "#F8766D")) +
+  labs(x = "",y="Intermediate native cover (%)")+
+  stat_smooth(method = "lm",color = "#F8766D") +
+  scale_color_manual(values =  c("#F8766D"))+
+  scale_x_continuous(limits = c(0, 100))+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                stat(r.squared), stat(p.value))),
+                  parse = TRUE)
+plot2a
 
-plot2
 
-#Run FacetWrapScaleControl.R script first!
-p2 <- plot2  + facet_wrap_custom(~category, scales = "free", ncol = 3, scale_overrides = list(
-  scale_override(1, scale_x_continuous(limits = c(0, 100))),
-  scale_override(2, scale_x_continuous(limits = c(0, 20))),
-  scale_override(3, scale_x_continuous(limits = c(-40, 60)))))
+#plot2b Intermediate  NatCov~Soil_Salinity======
+plot2b <- ggplot(data2[data2$category == "Soil_Salinity",],aes(x=values, y=Native_Cover, group=category))+
+  geom_point( aes(color = "#00BA38")) +
+  stat_smooth(method = "lm",color = "#00BA38") +
+  scale_color_manual(values =  c("#00BA38"))+
+  scale_x_continuous(limits = c(0, 20))+
+  facet_wrap(~category,scales="free") + 
+  labs(x="",y="")+
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                stat(r.squared), stat(p.value))),
+                  parse = TRUE)
+plot2b
 
-p2
+#plot2c Intermediate NatCov~Water_Depth ==========
+plot2c <- ggplot(data2[data2$category == "Water_Depth",],aes(x=values, y=Native_Cover, group=category, color = category))+
+  geom_point()+
+  labs(x = "",y="")+
+    scale_color_manual(values =  c("#619CFF"))+
+  facet_wrap(~category,scales="free") + 
+    theme(legend.position = "none",
+        strip.text=element_text(size=16))
+
+plot2c
 #Brackish:==========
-#Figures for looking at relationships between the different variables
-#in the path analysis
+#Figures for looking at relationships between the different variables in the path analysis
 VegAllEnvData <- read.csv("VegAllEnvData_03july2018.csv")#Our Veg Data. Proccessed as per CRMS file 1,2,3,4 in Github
 Plant_Info <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018, has info on what specCode is native/introduced
 native <- Plant_Info[Plant_Info$nat == "native",5]
@@ -210,25 +262,44 @@ data3<-Brackish_Data %>%
   select(Soil_Salinity, Water_Depth, Native_Cover )%>%
   gather(category, values,-Native_Cover) 
 
-#Remove the max value (outlier):
-data3[which.max(data3$Native_Cover), ]
-
-#plot3=======
-plot3 <- ggplot(data3,aes(x=values, y=Native_Cover, group=category, color = category))+
-  labs(x = "",y="Brackish Native Cover (%)")+
-  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
-  scale_color_manual(values =  c("#00BA38", "#619CFF"))+
-  geom_line(stat="smooth",method = "lm",size=.8)+
+#plot3a Brackish NatCov~Soil_Salinity=======
+plot3a <- ggplot(data3[data3$category=="Soil_Salinity",],aes(x=values, y=Native_Cover, group = category))+
+  labs(x = "",y="Brackish native cover (%)")+
+  geom_point( aes(color = "#00BA38")) +
+  stat_smooth(method = "lm",color = "#00BA38") +
+  scale_color_manual(values =  c("#00BA38"))+
+  scale_x_continuous(limits = c(0, 20))+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                stat(r.squared), stat(p.value))),
+                  parse = TRUE)
 
-plot3
+plot3a
 
-#Run FacetWrapScaleControl.R script first!
-p3 <- plot3 + facet_wrap_custom(~category, scales = "free", ncol = 2, scale_overrides = list(
-  scale_override(1, scale_x_continuous(limits = c(0, 20))),
-  scale_override(2, scale_x_continuous(limits = c(-40, 60)))))
+#plot3b Brackish NatCov~Water_Depth =======
 
+plot3b <- ggplot(data3[data3$category=="Water_Depth",],aes(x=values, y=Native_Cover, group=category))+
+  labs(x = "",y="")+
+  geom_point( aes(color = "#619CFF")) +
+  stat_smooth(method = "lm",color = "#619CFF") +
+  scale_color_manual(values =  c("#619CFF"))+
+  scale_x_continuous(limits = c(-40, 60))+
+  facet_wrap(~category,scales="free") + 
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                stat(r.squared), stat(p.value))),
+                  parse = TRUE)
+
+plot3b
 
 #Saline:==========
 #Figures for looking at relationships between the different variables
@@ -281,40 +352,62 @@ data4<-Saline_Data %>%
   select(Soil_Salinity, Water_Depth, Native_Cover )%>%
   gather(category, values,-Native_Cover) 
 
-#plot4=====
-plot4 <- ggplot(data4,aes(x=values, y=Native_Cover, group=category, color = category))+
-  labs(x = "",y="Saline Native Cover (%)")+
-  geom_point(alpha=0.2) + geom_smooth(method = "lm") +
-  scale_color_manual(values =  c("#00BA38", "#619CFF"))+
-  #geom_line(stat="smooth",method = "lm",size=.8)+
+#plot4a NatCov~Soil_Salinity=====
+plot4a <- ggplot(data4[data4$category=="Soil_Salinity",],aes(x=values, y=Native_Cover, group=category, color = category))+
+  labs(x = "",y="Saline native cover (%)")+
+  geom_point()+
+  geom_smooth(method = "lm") +
+  scale_color_manual(values =  c("black","#00BA38"))+
+  scale_x_continuous(limits = c(0, 20))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(color= "black",label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                               stat(r.squared), stat(p.value))),
+                  parse = TRUE)+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none" ,
+        strip.text=element_text(size=16))
 
-plot4
+plot4a
 
-#Run FacetWrapScaleControl.R script first!
-p4 <- plot4 + facet_wrap_custom(~category, scales = "free", ncol = 3, scale_overrides = list(
-  scale_override(1, scale_x_continuous(limits = c(0, 20))),
-  scale_override(2, scale_x_continuous(limits = c(-40, 60)))))
+#plot4b NatCov~Water_Depth =====
+plot4b <- ggplot(data4[data4$category=="Water_Depth",],
+                 aes(x=values, y=Native_Cover, group=category, color = category))+
+  labs(x = "",y="")+
+  geom_point()+
+  geom_smooth(method = "lm") +
+  scale_color_manual(values =  c("black", "#619CFF"))+
+  scale_x_continuous(limits = c(-40, 60))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(color= "black",label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                               stat(r.squared), stat(p.value))),
+                  parse = TRUE)+
+  facet_wrap(~category,scales="free") + 
+  theme(legend.position = "none" ,
+        strip.text=element_text(size=16))
 
+plot4b
 
 #Arrange all plots together (10 panels):========
-library(gridExtra)
-library(grid)
+grid.arrange(plot1a,plot1b,plot1c,  plot3a,  plot3b,
+             plot2a,plot2b, plot2c, plot4a,  plot4b,
+             ncol = 5 )#Even scales:
 
+g_even <- arrangeGrob (plot1a,plot1b,plot1c, plot3a,  plot3b, 
+                       plot2a,plot2b, plot2c,plot4a,  plot4b,
+                      nrow = 2 )#Even scales:
 
-grid.arrange(p1, p3,p2,p4, ncol = 2 )#Even scales:
-
-g_even <- arrangeGrob(p1, p3,p2,p4, nrow=2) #generates g
-
-ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels.jpeg", 
-       width = 22, 
+ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels_StatsOn.jpeg", 
+       width = 32, 
        height = 15,
        units = "cm",
        dpi = 600)
 
-ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels.pdf", 
-       width = 22, 
+ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels_StatsOn.pdf", 
+       width = 32, 
        height = 15,
        units = "cm",
        dpi = 600)
@@ -337,40 +430,26 @@ Introduced_Cover_Freshwater<-Freshwater_Data %>%
   gather(category, values,-Introduced_Cover) 
 
 plot_f1 <- ggplot(Introduced_Cover_Freshwater[Introduced_Cover_Freshwater$category=="Soil_Salinity",],
-                   aes(x=values, y=Introduced_Cover))+
-  labs(x = "",y="Freshwater introduced cover (%)")+
-  geom_point(alpha=0.2) + 
-  stat_smooth(method = "lm") +
-  scale_color_manual(values =  c("#00BA38", "#619CFF"))+
-  scale_x_continuous(limits = c(0,20))+
-  scale_y_continuous(limits = c(0,100))+
+                  aes(x=values, y=Introduced_Cover, group=category))+
+  geom_point( aes(color = "#00BA38")) +
+  scale_color_manual(values =  c("#00BA38"))+
+  scale_x_continuous(limits = c(0, 20))+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")+
-  stat_fit_glance(method = "lm",
-                  label.y = "top",
-                  method.args = list(formula = y ~ x),
-                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
-                                                stat(r.squared), stat(p.value))),
-                  parse = TRUE)
-
+  labs(x="",y="Freshwater introduced cover (%)")+
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))
 plot_f1
 
-plot_f2 <- ggplot(Introduced_Cover_Freshwater[Introduced_Cover_Freshwater$category=="Water_Depth",],
-                  aes(x=values, y=Introduced_Cover))+
-  labs(x = "",y="")+
-  geom_point(alpha=0.2) + 
-  stat_smooth(method = "lm") +
-  scale_x_continuous(limits = c(0,20))+
-  scale_y_continuous(limits = c(0,100))+
-  facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")+
-  stat_fit_glance(method = "lm",
-                  label.y = "top",
-                  method.args = list(formula = y ~ x),
-                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
-                                                stat(r.squared), stat(p.value))),
-                  parse = TRUE)
 
+plot_f2 <- ggplot(Introduced_Cover_Freshwater[Introduced_Cover_Freshwater$category=="Water_Depth",],
+                  aes(x=values, y=Introduced_Cover, group=category))+
+  geom_point( aes(color = "#619CFF")) +
+  scale_color_manual(values =  c("#619CFF"))+
+  scale_x_continuous(limits = c(0, 20))+
+  facet_wrap(~category,scales="free") + 
+  labs(x="",y="")+
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))
 plot_f2
 
 
@@ -387,54 +466,48 @@ Introduced_Cover_Intermediate <- Intermediate_Data %>%
   select(Soil_Salinity, Water_Depth, Introduced_Cover )%>%
   gather(category, values,-Introduced_Cover) 
 
-plot_i1 <- ggplot(Introduced_Cover_Intermediate[Introduced_Cover_Intermediate$category=="Soil_Salinity",],
-                  aes(x=values, y=Introduced_Cover))+
-  labs(x = "",y="Intermediate introduced cover (%)")+
-  geom_point(alpha=0.2) + 
-  stat_smooth(method = "lm") +
-  scale_x_continuous(limits = c(0,20))+
-  scale_y_continuous(limits = c(0,100))+
+#plot_i1 Intrd~WaterDepth====
+plot_i1 <-  ggplot(Introduced_Cover_Intermediate[Introduced_Cover_Intermediate$category=="Water_Depth",],
+                             aes(x=values, y=Introduced_Cover, group=category))+
+  geom_point( aes(color = "#619CFF")) +
+  scale_color_manual(values =  c("#619CFF"))+
+  scale_x_continuous(limits = c(0, 20))+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")+
-  stat_fit_glance(method = "lm",
-                  label.y = "top",
-                  method.args = list(formula = y ~ x),
-                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
-                                                stat(r.squared), stat(p.value))),
-                  parse = TRUE)
-
+  labs(y="",x="")+
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))
 plot_i1
 
-
-plot_i2 <- ggplot(Introduced_Cover_Intermediate[Introduced_Cover_Intermediate$category=="Water_Depth",],
-                  aes(x=values, y=Introduced_Cover))+
-  labs(x = "",y="")+
-  geom_point(alpha=0.2) + 
-  stat_smooth(method = "lm",se = F, linetype = 0) +
-  scale_x_continuous(limits = c(0,20))+
-  scale_y_continuous(limits = c(0,100))+
+#plot_i1 Intrd~Soil_Salinity====
+plot_i2 <-  ggplot(Introduced_Cover_Intermediate[Introduced_Cover_Intermediate$category=="Soil_Salinity",],
+                   aes(x=values, y=Introduced_Cover, group=category))+
+  geom_point( aes(color = "#00BA38")) +
+  stat_smooth(method = "lm",color = "#00BA38") +
+  scale_color_manual(values =  c("#00BA38"))+
+  scale_x_continuous(limits = c(0, 20))+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none")+
+  labs(y="",x="")+
+  theme(legend.position = "none",
+        strip.text=element_text(size=16))+
   stat_fit_glance(method = "lm",
-                  label.y = "top",
+                  label.x = c(0.9,0),
                   method.args = list(formula = y ~ x),
                   mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
                                                 stat(r.squared), stat(p.value))),
                   parse = TRUE)
-
-plot_i2
+plot_i2 
 
 
 #Arrange introduced_cover plots together:========
-ffii <- arrangeGrob (plot_f1, plot_f2, plot_i1, plot_i2, nrow=2) 
+ffii <- arrangeGrob (plot_f1, plot_f2, plot_i2, plot_i1, nrow=2) 
 
-ggsave(ffii, filename = "4PanelsFigure_RawData_FullLabels_IntroducedCover_R2P_values.jpg", 
+ggsave(ffii, filename = "4PanelsFigure_RawData_FullLabels_IntroducedCover_StatsOn.jpg", 
        width = 22, 
        height = 15,
        units = "cm",
        dpi = 200)
 
-ggsave(ffii, filename = "4PanelsFigure_RawData_FullLabels_IntroducedCover_R2P_values.pdf", 
+ggsave(ffii, filename = "4PanelsFigure_RawData_FullLabels_IntroducedCover_StatsOn.pdf", 
        width = 22, 
        height = 15,
        units = "cm",
