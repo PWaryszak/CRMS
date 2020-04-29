@@ -1,4 +1,4 @@
-#LOAD RAW DATA:=======
+#LOAD LIBRARIES:=======
 library(corrplot)
 library(Hmisc)
 library(tidyverse)
@@ -6,14 +6,14 @@ library(vegan)
 library(gridExtra)
 library(ggpmisc)
 library(grid)
+#To Draw Figures for looking at relationships between the different variables
+#in the path analysis as in Path_SEM7_Summaries.R file
 
-#Figures for looking at relationships between the different variables
-#in the path analysis
+#Freshwater Native_Cover Data =======
 VegAllEnvData <- read.csv("VegAllEnvData_03july2018.csv")#Our Veg Data. Proccessed as per CRMS file 1,2,3,4 in Github
 Plant_Info <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018, has info on what specCode is native/introduced
 native <- Plant_Info[Plant_Info$nat == "native",5]
 
-#Freshwater Native_Cover =======
 Freshwater_Data <-filter (VegAllEnvData, VegAllEnvData$Community=="Freshwater")
 #Subset native/introduced Veg matrix where colSums are > 0:
 Freshwater_Veg_Matrix <- as.data.frame (subset ( Freshwater_Data, select = c(Acer_rubrum:Ziza_miliacea)))
@@ -66,7 +66,7 @@ data1<-Freshwater_Data %>%
 
 #plot1a Freshwater NatCov~Introduced_Cover======
 plot1a <- ggplot(data1[data1$category == "Introduced_Cover",],aes(x=values, y=Native_Cover, group=category))+
-  labs(x = "",y="Freshwater natie cover (%)")+
+  labs(x = "",y="Freshwater native cover (%)")+
   geom_point( aes(color = "#F8766D")) +
   stat_smooth(method = "lm",color = "#F8766D") +
   scale_color_manual(values =  c("#F8766D"))+
@@ -103,17 +103,26 @@ plot1b
 
 #plot1c Freshwater NatCov~Water_Depth ==========
 plot1c <- ggplot(data1[data1$category == "Water_Depth",],aes(x=values, y=Native_Cover, group=category, color = category))+
-  geom_point()+
+  geom_point(aes(color = "#619CFF"))+
   labs(x = "",y="")+
-  scale_color_manual(values =  c("#619CFF"))+
+  scale_color_manual(values =  c("#619CFF","black"))+
+  scale_x_continuous(limits = c(-40, 60))+
+  stat_smooth(method = "lm",color = "#619CFF") +
   facet_wrap(~category,scales="free") + 
   theme(legend.position = "none",
-        strip.text=element_text(size=16))
+        strip.text=element_text(size=16))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                stat(r.squared), stat(p.value))),
+                  parse = TRUE)
+
 
 plot1c
 
 
-#Intermediate Native_Cover:========
+#Intermediate Native_Cover Data:========
 #Figures for looking at relationships between the different variables
 VegAllEnvData <- read.csv("VegAllEnvData_03july2018.csv")#Our Veg Data. Proccessed as per CRMS file 1,2,3,4 in Github
 Plant_Info <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018, has info on what specCode is native/introduced
@@ -207,12 +216,13 @@ plot2c <- ggplot(data2[data2$category == "Water_Depth",],aes(x=values, y=Native_
   geom_point()+
   labs(x = "",y="")+
     scale_color_manual(values =  c("#619CFF"))+
-  facet_wrap(~category,scales="free") + 
+  scale_x_continuous(limits = c(-40, 60))+
+    facet_wrap(~category,scales="free") + 
     theme(legend.position = "none",
         strip.text=element_text(size=16))
 
 plot2c
-#Brackish:==========
+#Brackish Native_Cover Data:==========
 #Figures for looking at relationships between the different variables in the path analysis
 VegAllEnvData <- read.csv("VegAllEnvData_03july2018.csv")#Our Veg Data. Proccessed as per CRMS file 1,2,3,4 in Github
 Plant_Info <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018, has info on what specCode is native/introduced
@@ -266,18 +276,11 @@ data3<-Brackish_Data %>%
 plot3a <- ggplot(data3[data3$category=="Soil_Salinity",],aes(x=values, y=Native_Cover, group = category))+
   labs(x = "",y="Brackish native cover (%)")+
   geom_point( aes(color = "#00BA38")) +
-  stat_smooth(method = "lm",color = "#00BA38") +
   scale_color_manual(values =  c("#00BA38"))+
   scale_x_continuous(limits = c(0, 30))+
   facet_wrap(~category,scales="free") + 
   theme(legend.position = "none",
-        strip.text=element_text(size=16))+
-  stat_fit_glance(method = "lm",
-                  label.x = c(0.9,0),
-                  method.args = list(formula = y ~ x),
-                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
-                                                stat(r.squared), stat(p.value))),
-                  parse = TRUE)
+        strip.text=element_text(size=16))
 
 plot3a
 
@@ -301,9 +304,7 @@ plot3b <- ggplot(data3[data3$category=="Water_Depth",],aes(x=values, y=Native_Co
 
 plot3b
 
-#Saline:==========
-#Figures for looking at relationships between the different variables
-#in the path analysis
+#Saline Native_Cover Data:==========
 VegAllEnvData <- read.csv("VegAllEnvData_03july2018.csv")#Our Veg Data. Proccessed as per CRMS file 1,2,3,4 in Github
 Plant_Info <- read.csv("LA_Plants_Clean.csv")#cleaned on 11 june 2018, has info on what specCode is native/introduced
 native <- Plant_Info[Plant_Info$nat == "native",5]
@@ -375,9 +376,9 @@ plot4a
 plot4b <- ggplot(data4[data4$category=="Water_Depth",],
                  aes(x=values, y=Native_Cover, group=category, color = category))+
   labs(x = "",y="")+
-  geom_point()+
-  geom_smooth(method = "lm") +
-  scale_color_manual(values =  c("black", "#619CFF"))+
+  geom_point(aes(color = c("#619CFF")))+
+  geom_smooth(method = "lm", color = "#619CFF" ) +
+  scale_color_manual(values =  c( "#619CFF","black"))+
   scale_x_continuous(limits = c(-40, 60))+
   stat_fit_glance(method = "lm",
                   label.x = c(0.9,0),
@@ -386,27 +387,27 @@ plot4b <- ggplot(data4[data4$category=="Water_Depth",],
                                                                stat(r.squared), stat(p.value))),
                   parse = TRUE)+
   facet_wrap(~category,scales="free") + 
-  theme(legend.position = "none" ,
-        strip.text=element_text(size=16))
+  theme(legend.position = "none", strip.text=element_text(size=16))
 
 plot4b
 
-#Arrange all plots together (10 panels):========
-grid.arrange(plot1a,plot1b,plot1c,  plot3a,  plot3b,
+
+#Arrange all Native_Cover plots together (10 panels):========
+grid.arrange(plot1a,plot1b,plot1c,  plot3a,  plot3b, #Check if all looks good
              plot2a,plot2b, plot2c, plot4a,  plot4b,
              ncol = 5 )#Even scales:
 
-g_even <- arrangeGrob (plot1a,plot1b,plot1c, plot3a,  plot3b, 
+g_even <- arrangeGrob (plot1a,plot1b,plot1c, plot3a,  plot3b, #To produce pdf
                        plot2a,plot2b, plot2c,plot4a,  plot4b,
                       nrow = 2 )#Even scales:
 
-ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels_StatsOn.jpeg", 
+#ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels_StatsOn.jpeg", 
        width = 32, 
        height = 15,
        units = "cm",
        dpi = 600)
 
-ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels_StatsOn_Salinity30ppt.pdf", 
+#ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels_StatsOn_Salinity30ppt.pdf", 
        width = 32, 
        height = 15,
        units = "cm",
@@ -433,7 +434,7 @@ plot_f1 <- ggplot(Introduced_Cover_Freshwater[Introduced_Cover_Freshwater$catego
                   aes(x=values, y=Introduced_Cover, group=category))+
   geom_point( aes(color = "#00BA38")) +
   scale_color_manual(values =  c("#00BA38"))+
-  scale_x_continuous(limits = c(0, 20))+
+  scale_x_continuous(limits = c(0, 30))+
   facet_wrap(~category,scales="free") + 
   labs(x="",y="Freshwater introduced cover (%)")+
   theme(legend.position = "none",
@@ -445,7 +446,7 @@ plot_f2 <- ggplot(Introduced_Cover_Freshwater[Introduced_Cover_Freshwater$catego
                   aes(x=values, y=Introduced_Cover, group=category))+
   geom_point( aes(color = "#619CFF")) +
   scale_color_manual(values =  c("#619CFF"))+
-  scale_x_continuous(limits = c(0, 20))+
+  scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~category,scales="free") + 
   labs(x="",y="")+
   theme(legend.position = "none",
@@ -466,27 +467,27 @@ Introduced_Cover_Intermediate <- Intermediate_Data %>%
   select(Soil_Salinity, Water_Depth, Introduced_Cover )%>%
   gather(category, values,-Introduced_Cover) 
 
-#plot_i1 Intrd~WaterDepth====
+#plot_i1 Intermediate Intrd~WaterDepth====
 plot_i1 <-  ggplot(Introduced_Cover_Intermediate[Introduced_Cover_Intermediate$category=="Water_Depth",],
                              aes(x=values, y=Introduced_Cover, group=category))+
   geom_point( aes(color = "#619CFF")) +
   scale_color_manual(values =  c("#619CFF"))+
-  scale_x_continuous(limits = c(0, 20))+
+  scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~category,scales="free") + 
   labs(y="",x="")+
   theme(legend.position = "none",
         strip.text=element_text(size=16))
 plot_i1
 
-#plot_i1 Intrd~Soil_Salinity====
+#plot_i1 Intermediate Intrd~Soil_Salinity====
 plot_i2 <-  ggplot(Introduced_Cover_Intermediate[Introduced_Cover_Intermediate$category=="Soil_Salinity",],
                    aes(x=values, y=Introduced_Cover, group=category))+
   geom_point( aes(color = "#00BA38")) +
   stat_smooth(method = "lm",color = "#00BA38") +
   scale_color_manual(values =  c("#00BA38"))+
-  scale_x_continuous(limits = c(0, 20))+
+  scale_x_continuous(limits = c(0, 30))+
   facet_wrap(~category,scales="free") + 
-  labs(y="",x="")+
+  labs(y="Intermediate introduced cover (%)",x="")+
   theme(legend.position = "none",
         strip.text=element_text(size=16))+
   stat_fit_glance(method = "lm",
@@ -501,19 +502,19 @@ plot_i2
 #Arrange introduced_cover plots together:========
 ffii <- arrangeGrob (plot_f1, plot_f2, plot_i2, plot_i1, nrow=2) 
 
-ggsave(ffii, filename = "4PanelsFigure_RawData_FullLabels_IntroducedCover_StatsOn.jpg", 
+#ggsave(ffii, filename = "4PanelsFigure_RawData_FullLabels_IntroducedCover_StatsOn.jpg", 
        width = 22, 
        height = 15,
        units = "cm",
        dpi = 200)
 
-ggsave(ffii, filename = "4PanelsFigure_RawData_FullLabels_IntroducedCover_StatsOn.pdf", 
+ggsave(ffii, filename = "4Panels_IntroducedCover_RawData__StatsOn.pdf", 
        width = 22, 
        height = 15,
        units = "cm",
        dpi = 600)
 
-# PLOT Salinity and Water Depth (suppl)=========
+# HISTOGRAM of Salinity and Water Depth (suppl)=========
 #For each marsh type, ie 4 panels side by side (fresh to saline),
 #plot  mean soil pore water salinity and mean water depth  
 #using the final averaged dataset
@@ -525,7 +526,7 @@ VegAllEnvData$Community <- factor(VegAllEnvData$Community, levels = c("Freshwate
 sal_plot <- ggplot(VegAllEnvData, aes(MeanWaterSalinity, group = Community)) +
   geom_histogram()+
   facet_grid(.~ Community)+ 
-  labs(y = "Soil salinity (ppt)", x="") +
+  labs(y = "", x="Soil salinity (ppt)") +
   theme_bw() +
   theme(axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12),
@@ -544,7 +545,7 @@ wat_plot <- ggplot(VegAllEnvData, aes(meanwaterdepthcm)) +
   #stat_summary(fun.y = "mean", size = 5, geom = "point", color = "black")+
   geom_histogram() +
   facet_grid(.~ Community)+ 
-  labs(y = "Water depth (cm)", x="") +
+  labs(y = "", x="Water depth (cm)") +
   theme_bw() +
   theme(axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12),
@@ -559,13 +560,13 @@ wat_plot
 
 #Stitch two plots together and save:
 wat_sal <- arrangeGrob(sal_plot,wat_plot, nrow=2) #generates g
-ggsave(wat_sal , filename = "SalinityDepth4Communities_Histogram_Suppl.pdf", 
+ggsave(wat_sal , filename = "HISTOGRAM_SalinityDepth4Communities.pdf", 
        width = 22, 
        height = 15,
        units = "cm",
        dpi = 600)
 
-#Plot Native Richness vs salinity, water depth,introduced cover (suppl)=========
+#Plot Native Richness/Cover/Composition vs salinity, water depth,introduced cover (suppl)=========
 #Make a fig with the other interactions native richness vs salinity, water depth and introduced cover
 #and native composition vs salinity, water depth, and introduced cover and put it in the supplement.
 VegAllEnvData <- read.csv("VegAllEnvData_03july2018.csv")#Our Veg Data. Proccessed as per CRMS file 1,2,3,4 in Github
@@ -605,17 +606,18 @@ r1 <- ggplot(VegAllEnvData,aes(y=Native_Richness, x=Mean_SoilSalinity))+
   #geom_line(stat="smooth",method = "lm",size=.8)+
   facet_wrap(~Community,nrow=1) + 
   theme(legend.position = "none")
+r1
 
 #plot r1a, Freshwater Native_Richness ~Soil_Salinity======
 r1a <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Freshwater",],
              aes(y=Native_Richness, x=Mean_SoilSalinity))+
   labs(x = "Soil salinity (ppt)",y="Native richness")+
   scale_y_continuous(limits = c(0,45))+ 
-  geom_point(aes(alpha=0.2,color="#00BA38")) + 
+  geom_point(aes(alpha=0.2,color= c("#00BA38"))) + 
   stat_smooth(method = "lm",color = "#00BA38") +
   scale_color_manual(values =  c("#00BA38"))+
   scale_x_continuous(limits = c(0, 30))+
-    facet_wrap(~Community,scales="free") + 
+  facet_wrap(~Community,scales="free") + 
   theme(legend.position = "none",
         strip.text=element_text(size=16))+
   stat_fit_glance(method = "lm",
@@ -715,8 +717,8 @@ w1b <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Intermediate",],
         strip.text=element_text(size=16))
 w1b      
 
-#plot w1c, Saline Native_Richness ~ meanwaterdepthcm======
-w1c <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
+#plot w1c, Brackish Native_Richness ~ meanwaterdepthcm======
+w1c <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Brackish",],
               aes(y=Native_Richness, x=meanwaterdepthcm))+
   labs(x = "Water depth (cm)" ,y="Native richness")+
   scale_y_continuous(limits = c(0,45))+ 
@@ -832,11 +834,12 @@ c1d
 #Double checking the stats on the plot: (correct!)
 summary(lm(Native_Richness~Introduced_Cover, VegAllEnvData[VegAllEnvData$Community=="Intermediate",]))
 
-suppl_rich <- arrangeGrob(r1a,r1b,r1c,r1d,
+suppl_rich <- arrangeGrob(c1a,c1b,c1c,c1d,
+                          r1a,r1b,r1c,r1d,
                           w1a,w1b,w1c,w1d,
-                          c1a,c1b,c1c,c1d,
+                          
                           nrow=3) 
-ggsave(suppl_rich, filename = "Suppl_NativeRichness_RawData_Interactions_StatsOn_Salinity30ppt.pdf", 
+ggsave(suppl_rich, filename = "12Panel_NativeRichness_RawData_StatsOn.pdf", 
        width = 32, 
        height = 15,
        units = "cm",
@@ -945,7 +948,7 @@ com2a <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Freshwater",],
   scale_y_continuous(limits = c(0,0.6))+ 
   geom_point(aes(alpha=0.2,color="#619CFF")) + 
   scale_color_manual(values =  c("#619CFF"))+
-  scale_x_continuous(limits = c(0, 100))+
+  scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~Community,scales="free") + 
   theme(legend.position = "none",
         strip.text=element_text(size=16))
@@ -953,12 +956,12 @@ com2a
 
 #plot com2b, Intermediate Native_Composition ~meanwaterdepthcm======
 com2b <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Intermediate",],
-                aes(y=Native_Composition, x=Mean_SoilSalinity))+
+                aes(y=Native_Composition, x=meanwaterdepthcm))+
   labs(x = "Water depth (cm)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
   geom_point(aes(alpha=0.2,color="#619CFF")) + 
   scale_color_manual(values =  c("#619CFF"))+
-  scale_x_continuous(limits = c(0, 100))+
+  scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~Community,scales="free") + 
   theme(legend.position = "none",
         strip.text=element_text(size=16))
@@ -966,12 +969,12 @@ com2b
 
 #plot com2c, Brackish Native_Composition ~meanwaterdepthcm======
 com2c <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Brackish",],
-                aes(y=Native_Composition, x=Mean_SoilSalinity))+
+                aes(y=Native_Composition, x=meanwaterdepthcm))+
   labs(x = "Water depth (cm)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
   geom_point(aes(alpha=0.2,color="#619CFF")) + 
   scale_color_manual(values =  c("#619CFF"))+
-  scale_x_continuous(limits = c(0, 100))+
+  scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~Community,scales="free") + 
   theme(legend.position = "none",
         strip.text=element_text(size=16))
@@ -979,12 +982,12 @@ com2c
 
 #plot com2d, Saline Native_Composition ~meanwaterdepthcm======
 com2d <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
-                aes(y=Native_Composition, x=Mean_SoilSalinity))+
+                aes(y=Native_Composition, x=meanwaterdepthcm))+
   labs(x = "Water depth (cm)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
   geom_point(aes(alpha=0.2,color="#619CFF")) + 
   scale_color_manual(values =  c("#619CFF"))+
-  scale_x_continuous(limits = c(0, 100))+
+  scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~Community,scales="free") + 
   theme(legend.position = "none",
         strip.text=element_text(size=16))
@@ -1003,7 +1006,7 @@ com3
 
 #plot com3a, Freshwater Native_Composition ~Introduced_Cover======
 com3a <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Freshwater",],
-                aes(y=Native_Composition, x=Mean_SoilSalinity))+
+                aes(y=Native_Composition, x=Introduced_Cover))+
   labs(x = "Introduced Cover (%)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
   geom_point(aes(alpha=0.2,color="#F8766D")) + 
@@ -1023,7 +1026,7 @@ com3a
 
 #plot com3b, Intermediate Native_Composition ~Introduced_Cover======
 com3b <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Intermediate",],
-                aes(y=Native_Composition, x=Mean_SoilSalinity))+
+                aes(y=Native_Composition, x=Introduced_Cover))+
   labs(x = "Introduced Cover (%)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
   geom_point(aes(alpha=0.2,color="#F8766D")) + 
@@ -1036,7 +1039,7 @@ com3b
 
 #plot com3c, Brackish Native_Composition ~Introduced_Cover======
 com3c <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Brackish",],
-                aes(y=Native_Composition, x=Mean_SoilSalinity))+
+                aes(y=Native_Composition, x=Introduced_Cover))+
   labs(x = "Introduced Cover (%)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
   geom_point(aes(alpha=0.2,color="#F8766D")) + 
@@ -1049,7 +1052,7 @@ com3c
 
 #plot com3d, Saline Native_Composition ~Introduced_Cover======
 com3d <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
-                aes(y=Native_Composition, x=Mean_SoilSalinity))+
+                aes(y=Native_Composition, x=Introduced_Cover))+
   labs(x = "Introduced Cover (%)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
   geom_point(aes(alpha=0.2,color="#F8766D")) + 
@@ -1060,13 +1063,13 @@ com3d <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
         strip.text=element_text(size=16))
 com3d
 
+#MERGE ALL COMPOSITION plots=====
+suppl_natcomp <- arrangeGrob(com3a,com3b,com3c,com3d,
+                             com2a,com2b,com2c,com2d,
+                             com1a,com1b,com1c,com1d,
+                             nrow=3)
 
-suppl_natcomp <- arrangeGrob(com1a,com1b,com1c,com1d,
-                      com2a,com2b,com2c,com2d,
-                      com3a,com3b,com3c,com3d,
-                      nrow=3)
-
-ggsave(suppl_natcomp, filename = "Suppl_Composition_RawData_Interactions_StatsOn.pdf", 
+ggsave(suppl_natcomp, filename = "12Panel_Composition_RawData_StatsOn.pdf", 
        width = 32, 
        height = 15,
        units = "cm",
