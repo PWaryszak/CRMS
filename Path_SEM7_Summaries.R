@@ -60,7 +60,7 @@ NatRich     ~  Soil
 #covariances:
 NatComp ~~ 0*NatRich
 NatCov  ~~ 0*NatComp
-NatCov  ~~ 0*NatRich #Turn on for plotting.
+#NatCov  ~~ 0*NatRich #Turn on for plotting, Turn off for stats
 '
 
 fit_Freshwater <- sem(model_Freshwater,missing="direct",estimator="ML",data=Freshwater_Data)
