@@ -654,12 +654,19 @@ r1c <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Brackish",],
   labs(x = "Soil salinity (ppt)",y="Native richness")+
   scale_y_continuous(limits = c(0,45))+ 
   geom_point(aes(alpha=0.2,color="#00BA38")) + 
+  stat_smooth(method = "lm",color = "#00BA38") +
   scale_color_manual(values =  c("#00BA38"))+
-  scale_x_continuous(limits = c(0, 30))+
+  scale_x_continuous(limits = c(0,30))+ #max value of Mean_Salinity is 28.46111
   facet_wrap(~Community,scales="free") + 
   theme(legend.position = "none",
-        strip.text=element_text(size=16))
-r1c      
+        strip.text=element_text(size=16))+
+  stat_fit_glance(method = "lm",
+                  label.x = c(0.9,0),
+                  method.args = list(formula = y ~ x),
+                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
+                                                stat(r.squared), stat(p.value))),
+                  parse = TRUE)
+r1c  
 
 #plot r1d, Saline Native_Richness ~Soil_Salinity======
 r1d <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
@@ -745,17 +752,10 @@ w1d <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
   scale_y_continuous(limits = c(0,45))+ 
   scale_x_continuous(limits = c(-40, 60))+
     geom_point(aes(alpha=0.2,color="#619CFF")) + 
-  stat_smooth(method = "lm",color = "#619CFF") +
   scale_color_manual(values =  c("#619CFF"))+
   facet_wrap(~Community,scales="free") + 
   theme(legend.position = "none",
-        strip.text=element_text(size=16))+
-  stat_fit_glance(method = "lm",
-                  label.x = c(0.9,0),
-                  method.args = list(formula = y ~ x),
-                  mapping = aes(label = sprintf('R^2~"="~%.3f~~italic(P)~"="~%.2g',
-                                                stat(r.squared), stat(p.value))),
-                  parse = TRUE)
+        strip.text=element_text(size=16))
 w1d  
 
 
