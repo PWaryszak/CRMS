@@ -401,7 +401,7 @@ g_even <- arrangeGrob (plot1a,plot1b,plot1c, plot3a,  plot3b, #To produce pdf
                        plot2a,plot2b, plot2c,plot4a,  plot4b,
                       nrow = 2 )#Even scales:
 
-#ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels_StatsOn.jpeg", 
+ggsave(g_even, filename = "10Panels_EvenScales_Figure_RawData_FullLabels_StatsOn2020.jpeg", 
        width = 32, 
        height = 15,
        units = "cm",
@@ -499,7 +499,7 @@ plot_i2 <-  ggplot(Introduced_Cover_Intermediate[Introduced_Cover_Intermediate$c
 plot_i2 
 
 
-#Arrange introduced_cover plots together:========
+#Arrange introduced_cover plots together (4 panels):========
 ffii <- arrangeGrob (plot_f1, plot_f2, plot_i2, plot_i1, nrow=2) 
 
 #ggsave(ffii, filename = "4PanelsFigure_RawData_FullLabels_IntroducedCover_StatsOn.jpg", 
@@ -587,7 +587,7 @@ VegAllEnvData$Native_Richness <- Native_Richness#convert vector into column with
 #Pick introduced only from Veg_Matrix and compute their total cover:
 Introduced.Species <- filter(Plant_Info, nat == "introduced")
 vars_introduced <- as.character(Introduced.Species$specCode)#to feed to next line, names of native plant species.
-only.introduced <- select( Veg_Matrix , one_of(vars_introduced))
+only.introduced <- select( Veg_Matrix , one_of (vars_introduced))
 #Calculate total Introduced_Cover:
 Introduced_Cover <- rowSums (only.introduced) #create extra vector  with richness of all natives
 VegAllEnvData$Introduced_Cover <- Introduced_Cover #convert vector into column with native richness
@@ -941,13 +941,14 @@ w2 <- ggplot(VegAllEnvData,aes(y=Native_Composition, x=meanwaterdepthcm))+
   facet_wrap(~Community, nrow = 1) + 
   theme(legend.position = "none")
 w2
+
 #plot com2a, Freshwater Native_Composition ~meanwaterdepthcm======
 com2a <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Freshwater",],
                 aes(y=Native_Composition, x=meanwaterdepthcm))+
   labs(x = "Water depth (cm)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
-  geom_point(aes(alpha=0.2,color="#619CFF")) + 
-  scale_color_manual(values =  c("#619CFF"))+
+  geom_point(aes(alpha=0.2)) + 
+  #scale_color_manual(values =  c("#619CFF"))+
   scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~Community,scales="free") + 
   theme(legend.position = "none",
@@ -959,7 +960,7 @@ com2b <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Intermediate",],
                 aes(y=Native_Composition, x=meanwaterdepthcm))+
   labs(x = "Water depth (cm)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
-  geom_point(aes(alpha=0.2,color="#619CFF")) + 
+  geom_point(aes(alpha=0.2)) +  #,color="black"
   scale_color_manual(values =  c("#619CFF"))+
   scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~Community,scales="free") + 
@@ -972,7 +973,7 @@ com2c <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Brackish",],
                 aes(y=Native_Composition, x=meanwaterdepthcm))+
   labs(x = "Water depth (cm)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
-  geom_point(aes(alpha=0.2,color="#619CFF")) + 
+  geom_point(aes(alpha=0.2)) + #,color="#619CFF"
   scale_color_manual(values =  c("#619CFF"))+
   scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~Community,scales="free") + 
@@ -985,7 +986,7 @@ com2d <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
                 aes(y=Native_Composition, x=meanwaterdepthcm))+
   labs(x = "Water depth (cm)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
-  geom_point(aes(alpha=0.2,color="#619CFF")) + 
+  geom_point(aes(alpha=0.2)) + #,color="#619CFF"
   scale_color_manual(values =  c("#619CFF"))+
   scale_x_continuous(limits = c(-40, 60))+
   facet_wrap(~Community,scales="free") + 
@@ -1055,7 +1056,7 @@ com3d <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
                 aes(y=Native_Composition, x=Introduced_Cover))+
   labs(x = "Introduced Cover (%)", y = "Native composition")+
   scale_y_continuous(limits = c(0,0.6))+ 
-  geom_point(aes(alpha=0.2,color="#F8766D")) + 
+  geom_point(aes(alpha=0.2)) + #,color="#F8766D"
   scale_color_manual(values =  c("#F8766D"))+
   scale_x_continuous(limits = c(0, 100))+
   facet_wrap(~Community,scales="free") + 
@@ -1064,12 +1065,12 @@ com3d <- ggplot(VegAllEnvData[VegAllEnvData$Community=="Saline",],
 com3d
 
 #MERGE ALL COMPOSITION plots=====
-suppl_natcomp <- arrangeGrob(com3a,com3b,com3c,com3d,
-                             com2a,com2b,com2c,com2d,
+suppl_natcomp <- arrangeGrob(com2a,com2b,com2c,com2d,
                              com1a,com1b,com1c,com1d,
+                             com3a,com3b,com3c,com3d,
                              nrow=3)
 
-ggsave(suppl_natcomp, filename = "12Panel_Composition_RawData_StatsOn.pdf", 
+ggsave(suppl_natcomp, filename = "12Panel_Composition_RawData_StatsOn4.pdf", 
        width = 32, 
        height = 15,
        units = "cm",
